@@ -246,10 +246,7 @@ export default function App() {
   };
 
   const openService = () => {
-    refPaymeSDK.current?._openService((data) => {
-      console.log('==========================object', data);
-      alert(JSON.stringify(data));
-    });
+    refPaymeSDK.current?._openService('HOCPHI');
   };
 
   const getListPaymentMethod = () => {
