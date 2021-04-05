@@ -143,7 +143,7 @@ export default function App() {
     setLoadingApp(true);
     Keyboard.dismiss();
     const res = await fetch(
-      `http://alcohol-delivery.toptravelasia.com/createConnectToken/${userID}/${appSecretkey}/${phone}`
+      `https://alcohol-delivery.toptravelasia.com/createConnectToken/${userID}/${appSecretkey}/${phone}`
     );
     if (res.status === 200) {
       const { connectToken } = await res.json();
@@ -153,34 +153,31 @@ export default function App() {
         appToken,
         clientId: Constants.deviceId,
         env,
-        partner: {
-          type: 'expo',
-          paddingTop: 20,
-        },
         showLog: showLog ? '1' : '0',
-        configColor: ['#00ffff', '#ff0000'],
         publicKey: appPublicKey,
         privateKey: appPrivateKey,
         xApi: appId,
         phone,
       };
-
-      refPaymeSDK.current?._login(configs, (data) => {
-        console.log('==========================object', data);
-        if (!data?.error) {
+      refPaymeSDK.current?.login(
+        configs,
+        (respone) => {
+          console.log('respone login', respone);
           alert('Login thành công.');
           setIsLogin(true);
           setLoadingApp(false);
           setTimeout(() => {
             getWalletInfo();
           }, 100);
-        } else {
-          const message = data?.error?.[0]?.message;
+        },
+        (error) => {
+          console.log('error login', error);
+          const message = error?.[0]?.message;
           alert(message ?? 'Login thất bại.');
           setIsLogin(false);
           setLoadingApp(false);
         }
-      });
+      );
     } else {
       alert('Tạo connectToken thất bại.');
       setLoadingApp(false);
@@ -194,36 +191,39 @@ export default function App() {
   };
 
   const handlePressOpen = () => {
-    refPaymeSDK.current?._open();
+    refPaymeSDK.current?.open();
   };
 
-  // useEffect(() => {
-  //   if (isLogin) {
-  //     getWalletInfo();
-  //   }
-  // }, [isLogin]);
-
   const getWalletInfo = () => {
-    console.log('getWalletInfo');
-    refPaymeSDK.current?._getWalletInfo((response) => {
-      console.log('==========================object', response);
-      // alert(JSON.stringify(response))
-      setBalance(response?.data?.balance ?? 0);
-    });
+    refPaymeSDK.current?.getWalletInfo(
+      (response) => {
+        console.log('response getWalletInfo', response);
+        setBalance(response?.balance ?? 0);
+      },
+      (error) => {
+        console.log('error getWalletInfo', error);
+        setBalance(0);
+      }
+    );
   };
 
   const getAccountInfo = () => {
-    refPaymeSDK.current?._getAccountInfo((data) => {
-      console.log('==========================object', data);
-      alert(JSON.stringify(data));
-    });
+    refPaymeSDK.current?.getAccountInfo(
+      (response) => {
+        console.log('response getAccountInfo', response);
+        alert(JSON.stringify(response));
+      },
+      (error) => {
+        console.log('error getAccountInfo', error);
+      }
+    );
   };
 
   const deposit = () => {
     if (!checkMoney(moneyDeposit)) {
       return;
     }
-    refPaymeSDK.current?._deposit({
+    refPaymeSDK.current?.deposit({
       amount: Number(moneyDeposit),
       description: 'description',
     });
@@ -232,30 +232,41 @@ export default function App() {
     if (!checkMoney(moneyWithdraw)) {
       return;
     }
-    refPaymeSDK.current?._withdraw({
+    refPaymeSDK.current?.withdraw({
       amount: Number(moneyWithdraw),
       description: 'description',
     });
   };
 
   const getListService = () => {
-    refPaymeSDK.current?._getListService((data) => {
-      console.log('==========================object', data);
-      alert(JSON.stringify(data));
-    });
+    refPaymeSDK.current?.getListService(
+      (response) => {
+        console.log('response getListService', response);
+        alert(JSON.stringify(response));
+      },
+      (error) => {
+        console.log('error getListService', error);
+      }
+    );
   };
 
   const openService = () => {
-    refPaymeSDK.current?._openService('HOCPHI');
+    refPaymeSDK.current?.openService('HOCPHI');
   };
 
   const getListPaymentMethod = () => {
     setLoadingApp(true);
-    refPaymeSDK.current?._getListPaymentMethod((data) => {
-      console.log('==========================object', data);
-      alert(JSON.stringify(data?.data));
-      setLoadingApp(false);
-    });
+    refPaymeSDK.current?.getListPaymentMethod(
+      (response) => {
+        console.log('response getListPaymentMethod', response);
+        alert(JSON.stringify(response));
+        setLoadingApp(false);
+      },
+      (error) => {
+        console.log('error getListPaymentMethod', error);
+        setLoadingApp(false);
+      }
+    );
   };
 
   const pay = () => {
@@ -268,10 +279,17 @@ export default function App() {
       storeId: CONFIGS[env].storeId,
       note: 'note',
     };
-    refPaymeSDK.current?._pay(data, (res) => {
-      console.log('==========================object', res);
-      alert(JSON.stringify(res));
-    });
+    refPaymeSDK.current?.pay(
+      data,
+      (response) => {
+        console.log('response pay', response);
+        alert(JSON.stringify(response));
+      },
+      (error) => {
+        console.log('error pay', error);
+        alert(JSON.stringify(error));
+      }
+    );
   };
 
   return (

@@ -3038,10 +3038,10 @@ expo-location@~10.0.0:
   resolved "https://registry.yarnpkg.com/expo-location/-/expo-location-10.0.0.tgz#2923411649434f2f079343b163b13c5c9eee8b2d"
   integrity sha512-QLEb0iaBv4/blLxxfKRj2/HPisY+1t+g6MgegqZ1j1U/0qih4dvzUQrxie9ZOZyQB9gnXFCRnZv3QzHEb52dcA==
 
-expo-payme-sdk@^0.1.6:
-  version "0.1.6"
-  resolved "https://registry.yarnpkg.com/expo-payme-sdk/-/expo-payme-sdk-0.1.6.tgz#de64d6ca9d0215ec24a88d09bee791b9dda772b7"
-  integrity sha512-IZ/GediOKJC3y93bM1PLKZVHYWEc1AmDvuC8lOauqaSBqWeToC2bAgGYJPfqb42tThvhhQsAC8GvpDmEPLfllw==
+expo-payme-sdk@^0.1.9:
+  version "0.1.9"
+  resolved "https://registry.yarnpkg.com/expo-payme-sdk/-/expo-payme-sdk-0.1.9.tgz#d827054391e140988f65c265968a36d5a19bd4b8"
+  integrity sha512-Sj+9vd5i/HjDh00/t/fgXIC5isl7XhT7Gy5S5sbMYV1YXdtzROVDHCdp/hpA0zFvZRok9ZkVg9GK3/F9dfGH6g==
   dependencies:
     crypto-js "3.3.0"
     react-native-webview "^11.3.2"
