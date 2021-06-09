@@ -19,6 +19,7 @@ import { AntDesign, FontAwesome, MaterialIcons } from "@expo/vector-icons"
 import Constants from "expo-constants"
 import { ActivityIndicator } from "react-native"
 import { encryptAES } from "./createConnectToken"
+import PickerModal from "react-native-picker-modal-view"
 
 const CONFIGS = {
   sandbox: {
@@ -42,12 +43,47 @@ const CONFIGS = {
     appId: "14",
     storeId: 24088141,
   },
+  dev: {
+    appToken:
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcHBJZCI6MTIsImlhdCI6MTYyMDg4MjQ2NH0.DJfi52Dc66IETflV2dQ8G_q4oUAVw_eG4TzrqkL0jLU",
+    publicKey: `-----BEGIN PUBLIC KEY-----
+      MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAJi70XBS5+LtaCrNsrnWlVG6xec+J9M1
+      DzzvsmDfqRgTIw7RQ94SnEBBcTXhaIAZ8IW7OIWkVU0OXcybQEoLsdUCAwEAAQ==
+      -----END PUBLIC KEY-----`,
+    privateKey: `-----BEGIN RSA PRIVATE KEY-----
+      MIIBOgIBAAJBAIA7GmDWkjuOQsx99tACXhOlJ4atsBN0YMPEmKhi9Ewk6bNBPvaX
+      pRMWjn7c8GfWrFUIVqlrvSlMYxmW/XaATjcCAwEAAQJAKZ6FPj8GcWwIBEUyEWtj
+      S28EODMxfe785S1u+uA7OGcerljPNOTme6iTuhooO5pB9Q5N7nB2KzoWOADwPOS+
+      uQIhAN2S5dxxadDL0wllNGeux7ltES0z2UfW9+RViByX/fAbAiEAlCd86Hy6otfd
+      k9K2YeylsdDwZfmkKq7p27ZcNqVUlBUCIQCxzEfRHdzoZDZjKqfjrzerTp7i4+Eu
+      KYzf19aSA1ENEwIgAnyXMB/H0ivlYDHNNd+O+GkVX+DMzJqa+kEZUyF7RfECICtK
+      rkcDyRzI6EtUFG+ALQOUliRRh7aiGXXZYb2KnlKy
+      -----END RSA PRIVATE KEY-----`,
+    env: "DEV",
+    secretKey: "34cfcd29432cdd5feaecb87519046e2d",
+    appId: "12",
+    storeId: 9,
+  },
 }
+
+const dataEnv = [
+  { Id: "1", Name: "sandbox", Value: "1" },
+  { Id: "2", Name: "dev", Value: "2" },
+]
 
 export default function App() {
   const refPaymeSDK = React.useRef(null)
 
   const [env, setEnv] = useState("sandbox")
+
+  const [listService, setListService] = useState([])
+  const [serviceSelected, setServiceSelected] = useState("MOBILE_CARD")
+
+  useEffect(() => {
+    if (listService.length > 0) {
+      setServiceSelected(listService[0]?.Value)
+    }
+  }, [listService])
 
   const [userID, setUserID] = useState("")
 
@@ -55,9 +91,10 @@ export default function App() {
 
   const [balancce, setBalance] = useState(0)
 
-  const [moneyDeposit, setMoneyDeposit] = useState("")
-  const [moneyWithdraw, setMoneyWithdraw] = useState("")
-  const [moneyPay, setMoneyPay] = useState("")
+  const [moneyDeposit, setMoneyDeposit] = useState("10000")
+  const [moneyWithdraw, setMoneyWithdraw] = useState("10000")
+  const [moneyTransfer, setMoneyTransfer] = useState("10000")
+  const [moneyPay, setMoneyPay] = useState("10000")
 
   const [appId, setAppId] = useState(CONFIGS[env].appId)
   const [appToken, setAppToken] = useState(CONFIGS[env].appToken)
@@ -133,10 +170,10 @@ export default function App() {
     Keyboard.dismiss()
 
     const data = {
-      userId: userID, 
+      userId: userID,
       phone,
       timestamp: Date.now(),
-    };
+    }
 
     const connectToken = encryptAES(JSON.stringify(data), appSecretkey)
 
@@ -152,7 +189,7 @@ export default function App() {
       phone,
       ...(Platform.OS === "ios" && {
         partner: {
-          paddingTop: 20,
+          paddingTop: 30,
         },
       }),
     }
@@ -164,7 +201,7 @@ export default function App() {
         setIsLogin(true)
         setLoadingApp(false)
         setTimeout(() => {
-          getWalletInfo()
+          getWalletInfo().then(() => getListService())
         }, 100)
       },
       error => {
@@ -183,20 +220,32 @@ export default function App() {
   }
 
   const handlePressOpen = () => {
-    refPaymeSDK.current?.open()
+    refPaymeSDK.current?.openWallet(
+      response => {
+        console.log("response openWallet", response)
+      },
+      error => {
+        console.log("error openWallet", error)
+        alert(error?.message ?? "error openWallet")
+      }
+    )
   }
 
   const getWalletInfo = () => {
-    refPaymeSDK.current?.getWalletInfo(
-      response => {
-        console.log("response getWalletInfo", response)
-        setBalance(response?.balance ?? 0)
-      },
-      error => {
-        console.log("error getWalletInfo", error)
-        setBalance(0)
-      }
-    )
+    return new Promise(resole => {
+      refPaymeSDK.current?.getWalletInfo(
+        response => {
+          console.log("response getWalletInfo", response)
+          setBalance(response?.balance ?? 0)
+          resole(true)
+        },
+        error => {
+          console.log("error getWalletInfo", error)
+          setBalance(0)
+          resole(true)
+        }
+      )
+    })
   }
 
   const getAccountInfo = () => {
@@ -215,40 +264,96 @@ export default function App() {
     if (!checkMoney(moneyDeposit)) {
       return
     }
-    refPaymeSDK.current?.deposit({
-      amount: Number(moneyDeposit),
-      description: "description",
-    })
+    refPaymeSDK.current?.deposit(
+      {
+        amount: Number(moneyDeposit),
+        description: "description",
+      },
+      response => {
+        console.log("response deposit", response)
+      },
+      error => {
+        console.log("error deposit", error)
+        alert(error?.message ?? "error deposit")
+      }
+    )
   }
   const withdraw = () => {
     if (!checkMoney(moneyWithdraw)) {
       return
     }
-    refPaymeSDK.current?.withdraw({
-      amount: Number(moneyWithdraw),
-      description: "description",
-    })
+    refPaymeSDK.current?.withdraw(
+      {
+        amount: Number(moneyWithdraw),
+        description: "description",
+      },
+      response => {
+        console.log("response withdraw", response)
+      },
+      error => {
+        console.log("error withdraw", error)
+        alert(error?.message ?? "error withdraw")
+      }
+    )
+  }
+
+  const transfer = () => {
+    if (!checkMoney(moneyTransfer)) {
+      return
+    }
+    refPaymeSDK.current?.transfer(
+      {
+        amount: Number(moneyTransfer),
+        description: "Chuyển tiền",
+        closeWhenDone: true
+      },
+      response => {
+        console.log("response transfer", response)
+      },
+      error => {
+        console.log("error transfer", error)
+        alert(error?.message ?? "error transfer")
+      }
+    )
   }
 
   const getListService = () => {
     refPaymeSDK.current?.getListService(
       response => {
         console.log("response getListService", response)
-        alert(JSON.stringify(response))
+        if (Array.isArray(response)) {
+          setListService(
+            response
+              ?.filter(i => i?.enable === true)
+              .map((i, index) => ({ Id: `${index}`, Name: `${i?.description}`, Value: `${i?.code}` })) ?? []
+          )
+        }
       },
       error => {
         console.log("error getListService", error)
+        alert(error?.message ?? "error getListService")
       }
     )
   }
 
   const openService = () => {
-    refPaymeSDK.current?.openService("HOCPHI")
+    refPaymeSDK.current?.openService(
+      serviceSelected ?? "MOBILE_CARD",
+      response => {
+        console.log("response openService", response)
+      },
+      error => {
+        console.log("error openService", error)
+        alert(error?.message ?? "error openService")
+      }
+    )
   }
 
   const getListPaymentMethod = () => {
     setLoadingApp(true)
+    const storeId = CONFIGS[env].storeId
     refPaymeSDK.current?.getListPaymentMethod(
+      storeId,
       response => {
         console.log("response getListPaymentMethod", response)
         alert(JSON.stringify(response))
@@ -270,16 +375,18 @@ export default function App() {
       orderId: Date.now().toString(),
       storeId: CONFIGS[env].storeId,
       note: "note",
+      // method: {
+      //   type: 'WALLET'
+      // }
     }
     refPaymeSDK.current?.pay(
       data,
       response => {
         console.log("response pay", response)
-        // alert(JSON.stringify(response));
       },
       error => {
         console.log("error pay", error)
-        // alert(JSON.stringify(error));
+        alert(error?.message ?? 'error pay');
       }
     )
   }
@@ -302,29 +409,17 @@ export default function App() {
               }}
             >
               <Text>Enviroment</Text>
-              <View
-                style={{
-                  borderWidth: 0.5,
-                  borderRadius: 5,
-                  borderColor: "grey",
-                  marginLeft: 10,
-                }}
-              >
-                <TouchableOpacity activeOpacity={0.5} style={{paddingHorizontal: 30, paddingVertical: 5, justifyContent: 'center', alignItems: 'center'}}>
-                  <Text>sandbox</Text>
-                </TouchableOpacity>
-                {/* <Picker
-                  selectedValue={env}
-                  style={{ height: 30, width: 150 }}
-                  mode="dropdown"
-                  onValueChange={(itemValue, itemIndex) => {
-                    setEnv(itemValue)
-                    handleChangeEnv(itemValue)
+              <View>
+                <PickerModal
+                  items={dataEnv}
+                  onSelected={i => {
+                    if (i.Name) {
+                      setEnv(i.Name)
+                      handleChangeEnv(i.Name)
+                    }
                   }}
-                >
-                  <Picker.Item label="sandbox" value="sandbox" />
-                  <Picker.Item label="production" value="production" />
-                </Picker> */}
+                  selected={dataEnv[0]}
+                />
               </View>
               <TouchableOpacity onPress={() => setShowSetting(!showSetting)}>
                 <AntDesign name="setting" size={24} color="black" />
@@ -526,6 +621,26 @@ export default function App() {
                         marginTop: 15,
                       }}
                     >
+                      <TouchableOpacity style={styles.btnDeposit} activeOpacity={0.8} onPress={transfer}>
+                        <Text>TRANSFER</Text>
+                      </TouchableOpacity>
+                      <TextInput
+                        style={styles.inputMoney}
+                        value={moneyTransfer}
+                        onChangeText={text => setMoneyTransfer(text)}
+                        placeholder="Nhập số tiền"
+                        keyboardType="numeric"
+                        maxLength={9}
+                      />
+                    </View>
+
+                    <View
+                      style={{
+                        width: "100%",
+                        flexDirection: "row",
+                        marginTop: 15,
+                      }}
+                    >
                       <TouchableOpacity style={styles.btnDeposit} activeOpacity={0.8} onPress={pay}>
                         <Text>PAY</Text>
                       </TouchableOpacity>
@@ -542,6 +657,32 @@ export default function App() {
                     <TouchableOpacity style={styles.btnOpenWallet} activeOpacity={0.8} onPress={getListPaymentMethod}>
                       <Text>GET LIST PAYMENT METHOD</Text>
                     </TouchableOpacity>
+
+                    {listService.length > 0 && (
+                      <View
+                        style={{
+                          width: "100%",
+                          flexDirection: "row",
+                          alignItems: "center",
+                        }}
+                      >
+                        <TouchableOpacity
+                          style={[styles.btnDeposit, { flex: 1, marginRight: 10, paddingVertical: 11 }]}
+                          activeOpacity={0.8}
+                          onPress={openService}
+                        >
+                          <Text>OPEN SERVICE</Text>
+                        </TouchableOpacity>
+
+                        <View style={{ flex: 1 }}>
+                          <PickerModal
+                            items={listService}
+                            onSelected={i => setServiceSelected(i?.Value ?? "MOBILE_CARD")}
+                            selected={listService[0]}
+                          />
+                        </View>
+                      </View>
+                    )}
                   </View>
                 )}
               </>
@@ -577,7 +718,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     padding: 16,
-    paddingTop: StatusBar.currentHeight
+    paddingTop: StatusBar.currentHeight,
   },
   btnLogin: {
     justifyContent: "center",

@@ -18,8 +18,11 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.expopaymesdk.example",
-      "buildNumber": "1.0.0"
+      "bundleIdentifier": "vn.payme.sdk.expo.example",
+      "buildNumber": "10",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -27,8 +30,7 @@
         "backgroundColor": "#FFFFFF"
       },
       "package": "com.expopaymesdk.example",
-      "versionCode": 1,
-      "enableDangerousExperimentalLeanBuilds": true
+      "versionCode": 10
     },
     "web": {
       "favicon": "./assets/favicon.png"
