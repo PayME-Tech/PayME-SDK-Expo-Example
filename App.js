@@ -183,6 +183,7 @@ export default function App() {
       clientId: Constants.deviceId,
       env,
       showLog: showLog ? "1" : "0",
+      configColor: ["#5828f2", "#5774fd"],
       publicKey: appPublicKey,
       privateKey: appPrivateKey,
       xApi: appId,

@@ -3664,23 +3664,6 @@ expo-location@~10.0.0:
   resolved "https://registry.yarnpkg.com/expo-location/-/expo-location-10.0.0.tgz#2923411649434f2f079343b163b13c5c9eee8b2d"
   integrity sha512-QLEb0iaBv4/blLxxfKRj2/HPisY+1t+g6MgegqZ1j1U/0qih4dvzUQrxie9ZOZyQB9gnXFCRnZv3QzHEb52dcA==
 
-expo-payme-sdk@^0.1.22:
-  version "0.1.22"
-  resolved "https://registry.yarnpkg.com/expo-payme-sdk/-/expo-payme-sdk-0.1.22.tgz#feac36f720f32f4a7be504b423e3bf9333d932b4"
-  integrity sha512-5gvBkp7WKpk5td8my197uqizY3VZuQMGm3xWiu5EkUU8u0e+nPhvQvGVBRCvHWqZ5Wzon45aYxjKyWTTxVhyYg==
-  dependencies:
-    axios "^0.21.1"
-    crypto-js "3.3.0"
-    expo-av "^9.1.2"
-    expo-barcode-scanner "^10.0.0"
-    expo-camera "^10.0.0"
-    expo-constants "^10.0.1"
-    expo-image-manipulator "^9.1.0"
-    expo-image-picker "^10.0.0"
-    expo-permissions "^12.0.1"
-    react-native-barcode-mask "^1.2.4"
-    react-native-webview "^11.3.2"
-
 "expo-payme-sdk@http://git.mecorp.vn/lannt/exp-payme-sdk.git":
   version "0.1.22"
   resolved "http://git.mecorp.vn/lannt/exp-payme-sdk.git#20d85b4164a818a79d9f2f3206c8d2e03ff8fd72"
