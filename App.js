@@ -1,6 +1,6 @@
 /* eslint-disable no-alert */
 /* eslint-disable react-native/no-inline-styles */
-import React, { useEffect, useState } from "react"
+import React, { Component } from "react";
 import {
   Keyboard,
   KeyboardAvoidingView,
@@ -13,13 +13,13 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-} from "react-native"
-import PaymeSDK from "expo-payme-sdk"
-import { AntDesign, FontAwesome, MaterialIcons } from "@expo/vector-icons"
-import Constants from "expo-constants"
-import { ActivityIndicator } from "react-native"
-import { encryptAES } from "./createConnectToken"
-import PickerModal from "react-native-picker-modal-view"
+} from "react-native";
+import PaymeSDK from "expo-payme-sdk";
+import { AntDesign, FontAwesome, MaterialIcons } from "@expo/vector-icons";
+import Constants from "expo-constants";
+import { ActivityIndicator } from "react-native";
+import { encryptAES } from "./createConnectToken";
+import PickerModal from "react-native-picker-modal-view";
 
 const CONFIGS = {
   sandbox: {
@@ -64,121 +64,139 @@ const CONFIGS = {
     appId: "12",
     storeId: 9,
   },
-}
+};
 
 const dataEnv = [
   { Id: "1", Name: "sandbox", Value: "1" },
   { Id: "2", Name: "dev", Value: "2" },
-]
+];
 
-export default function App() {
-  const refPaymeSDK = React.useRef(null)
+export default class App extends Component {
+  constructor(props) {
+    super(props);
+    this.refPaymeSDK = null;
+    this.state = {
+      env: "sandbox",
+      listService: [],
+      userID: "",
+      phone: "",
+      balancce: 0,
+      moneyDeposit: "10000",
+      moneyWithdraw: "10000",
+      moneyTransfer: "10000",
+      moneyPay: "10000",
+      appId: "",
+      appToken: "",
+      appPublicKey: "",
+      appPrivateKey: "",
+      appSecretkey: "",
+      showLog: false,
+      showSetting: false,
+      isLogin: false,
+      loadingApp: false,
+      serviceSelected: "MOBILE_CARD"
+    };
+  }
 
-  const [env, setEnv] = useState("sandbox")
-
-  const [listService, setListService] = useState([])
-  const [serviceSelected, setServiceSelected] = useState("MOBILE_CARD")
-
-  useEffect(() => {
-    if (listService.length > 0) {
-      setServiceSelected(listService[0]?.Value)
-    }
-  }, [listService])
-
-  const [userID, setUserID] = useState("")
-
-  const [phone, setPhone] = useState("")
-
-  const [balancce, setBalance] = useState(0)
-
-  const [moneyDeposit, setMoneyDeposit] = useState("10000")
-  const [moneyWithdraw, setMoneyWithdraw] = useState("10000")
-  const [moneyTransfer, setMoneyTransfer] = useState("10000")
-  const [moneyPay, setMoneyPay] = useState("10000")
-
-  const [appId, setAppId] = useState(CONFIGS[env].appId)
-  const [appToken, setAppToken] = useState(CONFIGS[env].appToken)
-  const [appPublicKey, setAppPublicKey] = useState(CONFIGS[env].publicKey)
-  const [appPrivateKey, setAppPrivateKey] = useState(CONFIGS[env].privateKey)
-  const [appSecretkey, setAppSecretkey] = useState(CONFIGS[env].secretKey)
-
-  const [showLog, setShowLog] = useState(false)
-  const [showSetting, setShowSetting] = useState(false)
-
-  const [isLogin, setIsLogin] = useState(false)
-
-  const [loadingApp, setLoadingApp] = useState(false)
   // useEffect(() => {
-  //   setLoadingApp(false)
-  // },[])
-
-  const handleRestoreDefault = () => {
-    setAppId(CONFIGS[env].appId)
-    setAppToken(CONFIGS[env].appToken)
-    setAppPublicKey(CONFIGS[env].publicKey)
-    setAppPrivateKey(CONFIGS[env].privateKey)
-    setAppSecretkey(CONFIGS[env].secretKey)
-    setShowLog(false)
-    setIsLogin(false)
+  //   if (listService.length > 0) {
+  //     setServiceSelected(listService[0]?.Value)
+  //   }
+  // }, [listService])
+  componentDidMount() {
+    this.setState({
+      appId: CONFIGS[this.state.env].appId,
+      appToken: CONFIGS[this.state.env].appToken,
+      appPublicKey: CONFIGS[this.state.env].appPublicKey,
+      appPrivateKey: CONFIGS[this.state.env].appPrivateKey,
+      appSecretkey: CONFIGS[this.state.env].appSecretkey,
+      loadingApp: false
+    });
   }
+  // componentDidUpdate(prevProps, prevState) {
+  //   console.log("prevProps", prevProps);
+  //   console.log("prevState", prevState);
+  // }
 
-  const handleChangeEnv = env => {
-    setAppId(CONFIGS[env].appId)
-    setAppToken(CONFIGS[env].appToken)
-    setAppPublicKey(CONFIGS[env].publicKey)
-    setAppPrivateKey(CONFIGS[env].privateKey)
-    setAppSecretkey(CONFIGS[env].secretKey)
-    setIsLogin(false)
-  }
+  handleRestoreDefault = () => {
+    this.setState({
+      appId: CONFIGS[this.state.env].appId,
+      appToken: CONFIGS[this.state.env].appToken,
+      appPublicKey: CONFIGS[this.state.env].appPublicKey,
+      appPrivateKey: CONFIGS[this.state.env].appPrivateKey,
+      appSecretkey: CONFIGS[this.state.env].appSecretkey,
+      showLog: false,
+      isLogin: false,
+    });
+  };
 
-  const handleSave = () => {
-    setShowSetting(false)
-    setIsLogin(false)
-  }
+  handleChangeEnv = env => {
+    this.setState({
+      appId: CONFIGS[env].appId,
+      appToken: CONFIGS[env].appToken,
+      appPublicKey: CONFIGS[env].appPublicKey,
+      appPrivateKey: CONFIGS[env].appPrivateKey,
+      appSecretkey: CONFIGS[env].appSecretkey,
+      isLogin: false,
+    });
+  };
 
-  const checkMoney = money => {
-    const m = Number(money)
+  handleSave = () => {
+    this.setState({
+      isLogin: false,
+      showSetting: false,
+    });
+  };
+
+  checkMoney = money => {
+    const m = Number(money);
     if (m < 10000) {
-      alert("Vui lòng nhập số tiền lớn hơn 10,000 đ.")
-      return false
+      alert("Vui lòng nhập số tiền lớn hơn 10,000 đ.");
+      return false;
     } else if (m >= 100000000) {
-      alert("Vui lòng nhập số tiền nhỏ hơn 100,000,000 đ.")
-      return false
+      alert("Vui lòng nhập số tiền nhỏ hơn 100,000,000 đ.");
+      return false;
     }
-    return true
-  }
-  const checkUserId = () => {
+    return true;
+  };
+  checkUserId = () => {
+    const { userID, phone } = this.state;
     if (userID === "") {
-      alert("userID is required!")
-      return false
+      alert("userID is required!");
+      return false;
     }
     if (phone === "") {
-      alert("Phone Number is required!")
-      return false
+      alert("Phone Number is required!");
+      return false;
     }
     if (!/^(0|84)\d{9}$/g.test(phone)) {
-      alert("Số điện thoại không hợp lệ!")
-      return false
+      alert("Số điện thoại không hợp lệ!");
+      return false;
     }
-    return true
-  }
+    return true;
+  };
 
-  const handleLogin = async () => {
-    setBalance(0)
-    setIsLogin(false)
-    if (!checkUserId()) {
-      return
+  handleLogin = async () => {
+    const { userID, phone, appSecretkey, appToken, env, showLog, appPrivateKey, appPublicKey, appId } = this.state;
+    this.setState({
+      balancce: 0,
+      isLogin: false,
+    });
+    if (!this.checkUserId()) {
+      return;
     }
-    setLoadingApp(true)
-    Keyboard.dismiss()
+    this.setState({
+      loadingApp: true,
+    });
+    Keyboard.dismiss();
 
     const data = {
       userId: userID,
       phone,
       timestamp: Date.now(),
-    }
+    };
 
-    const connectToken = encryptAES(JSON.stringify(data), appSecretkey)
+    const connectToken = encryptAES(JSON.stringify(data), appSecretkey);
 
     const configs = {
       connectToken,
@@ -195,96 +213,104 @@ export default function App() {
           paddingTop: 30,
         },
       }),
-    }
-    refPaymeSDK.current?.login(
+    };
+    refPaymeSDK?.login(
       configs,
       respone => {
-        console.log("respone login", respone)
-        alert("Login thành công")
-        setIsLogin(true)
-        setLoadingApp(false)
-        getWalletInfo()
-        getListService()
+        console.log("respone login", respone);
+        alert("Login thành công");
+        this.getWalletInfo();
+        this.getListService();
+        this.setState({
+          isLogin: true,
+          loadingApp: false,
+        });
       },
       error => {
-        console.log("error login", error)
-        alert(error?.message ?? "Login thất bại")
-        setIsLogin(false)
-        setLoadingApp(false)
+        console.log("error login", error);
+        alert(error?.message ?? "Login thất bại");
+        this.setState({
+          isLogin: false,
+          loadingApp: false,
+        });
       }
-    )
-  }
+    );
+  };
 
-  const onLogout = () => {
-    setUserID("")
-    setPhone("")
-    setIsLogin(false)
-  }
+  onLogout = () => {
+    this.setState({
+      userID: "",
+      phone: "",
+      isLogin: false,
+    });
+  };
 
-  const handlePressOpen = () => {
-    refPaymeSDK.current?.openWallet(
+  handlePressOpen = () => {
+    refPaymeSDK?.openWallet(
       response => {
-        console.log("response openWallet", response)
+        console.log("response openWallet", response);
       },
       error => {
-        console.log("error openWallet", error)
-        alert(error?.message ?? "error openWallet")
+        console.log("error openWallet", error);
+        alert(error?.message ?? "error openWallet");
       }
-    )
-  }
+    );
+  };
 
-  const getWalletInfo = () => {
-    console.log('getWalletInfo')
-    return new Promise(resole => {
-      refPaymeSDK.current?.getWalletInfo(
-        response => {
-          console.log("response getWalletInfo", response)
-          setBalance(response?.balance ?? 0)
-          resole(true)
-        },
-        error => {
-          console.log("error getWalletInfo", error)
-          setBalance(0)
-          resole(true)
-        }
-      )
-    })
-  }
+  getWalletInfo = () => {
+    console.log("getWalletInfo");
+    refPaymeSDK.current?.getWalletInfo(
+      response => {
+        console.log("response getWalletInfo", response);
+        this.setState({
+          balancce: response?.balance ?? 0,
+        });
+      },
+      error => {
+        console.log("error getWalletInfo", error);
+        this.setState({
+          balancce: 0,
+        });
+      }
+    );
+  };
 
-  const getAccountInfo = () => {
+  getAccountInfo = () => {
     refPaymeSDK.current?.getAccountInfo(
       response => {
-        console.log("response getAccountInfo", response)
-        alert(JSON.stringify(response))
+        console.log("response getAccountInfo", response);
+        alert(JSON.stringify(response));
       },
       error => {
-        console.log("error getAccountInfo", error)
-        alert(error.message ?? "error getAccountInfo")
+        console.log("error getAccountInfo", error);
+        alert(error.message ?? "error getAccountInfo");
       }
-    )
-  }
+    );
+  };
 
-  const deposit = () => {
-    if (!checkMoney(moneyDeposit)) {
-      return
+  deposit = () => {
+    const { moneyDeposit } = this.state;
+    if (!this.checkMoney(moneyDeposit)) {
+      return;
     }
-    refPaymeSDK.current?.deposit(
+    refPaymeSDK?.deposit(
       {
         amount: Number(moneyDeposit),
-        description: "description"
+        description: "description",
       },
       response => {
-        console.log("response deposit", response)
+        console.log("response deposit", response);
       },
       error => {
-        console.log("error deposit", error)
-        alert(error?.message ?? "error deposit")
+        console.log("error deposit", error);
+        alert(error?.message ?? "error deposit");
       }
-    )
-  }
-  const withdraw = () => {
+    );
+  };
+  withdraw = () => {
+    const { moneyWithdraw } = this.state;
     if (!checkMoney(moneyWithdraw)) {
-      return
+      return;
     }
     refPaymeSDK.current?.withdraw(
       {
@@ -292,432 +318,446 @@ export default function App() {
         description: "description",
       },
       response => {
-        console.log("response withdraw", response)
+        console.log("response withdraw", response);
       },
       error => {
-        console.log("error withdraw", error)
-        alert(error?.message ?? "error withdraw")
+        console.log("error withdraw", error);
+        alert(error?.message ?? "error withdraw");
       }
-    )
-  }
+    );
+  };
 
-  const transfer = () => {
+  transfer = () => {
+    const { moneyTransfer } = this.state;
     if (!checkMoney(moneyTransfer)) {
-      return
+      return;
     }
-    refPaymeSDK.current?.transfer(
+    refPaymeSDK?.transfer(
       {
         amount: Number(moneyTransfer),
         description: "Chuyển tiền",
-        closeWhenDone: true
+        closeWhenDone: true,
       },
       response => {
-        console.log("response transfer", response)
+        console.log("response transfer", response);
       },
       error => {
-        console.log("error transfer", error)
-        alert(error?.message ?? "error transfer")
+        console.log("error transfer", error);
+        alert(error?.message ?? "error transfer");
       }
-    )
-  }
+    );
+  };
 
-  const getListService = () => {
-    console.log('getListService')
-    refPaymeSDK.current?.getListService(
+  getListService = () => {
+    console.log("getListService");
+    refPaymeSDK?.getListService(
       response => {
-        console.log("response getListService", response)
+        console.log("response getListService", response);
         if (Array.isArray(response)) {
-          setListService(
-            response
-              ?.filter(i => i?.enable === true)
-              .map((i, index) => ({ Id: `${index}`, Name: `${i?.description}`, Value: `${i?.code}` })) ?? []
-          )
+          const list = response
+          ?.filter(i => i?.enable === true)
+          .map((i, index) => ({ Id: `${index}`, Name: `${i?.description}`, Value: `${i?.code}` })) ?? []
+          this.setState({
+            listService: list,
+            serviceSelected: list[0]?.Value ?? 'MOBILE_CARD'
+          });
         }
       },
       error => {
-        console.log("error getListService", error)
-        alert(error?.message ?? "error getListService")
+        console.log("error getListService", error);
+        alert(error?.message ?? "error getListService");
       }
-    )
-  }
+    );
+  };
 
-  const openService = () => {
-    refPaymeSDK.current?.openService(
-      serviceSelected ?? "MOBILE_CARD",
+  openService = () => {
+    refPaymeSDK?.openService(
+      this.state.serviceSelected ?? "MOBILE_CARD",
       response => {
-        console.log("response openService", response)
+        console.log("response openService", response);
       },
       error => {
-        console.log("error openService", error)
-        alert(error?.message ?? "error openService")
+        console.log("error openService", error);
+        alert(error?.message ?? "error openService");
       }
-    )
-  }
+    );
+  };
 
-  const getListPaymentMethod = () => {
-    setLoadingApp(true)
-    const storeId = CONFIGS[env].storeId
-    refPaymeSDK.current?.getListPaymentMethod(
+  getListPaymentMethod = () => {
+    this.setState({
+      loadingApp: true,
+    });
+    const storeId = CONFIGS[this.state.env].storeId;
+    refPaymeSDK?.getListPaymentMethod(
       storeId,
       response => {
-        console.log("response getListPaymentMethod", response)
-        alert(JSON.stringify(response))
-        setLoadingApp(false)
+        console.log("response getListPaymentMethod", response);
+        alert(JSON.stringify(response));
+        this.setState({
+          loadingApp: false,
+        });
       },
       error => {
-        console.log("error getListPaymentMethod", error)
-        alert(error.message ?? "error getAccountInfo")
-        setLoadingApp(false)
+        console.log("error getListPaymentMethod", error);
+        alert(error.message ?? "error getAccountInfo");
+        this.setState({
+          loadingApp: false,
+        });
       }
-    )
-  }
+    );
+  };
 
-  const pay = () => {
-    if (!checkMoney(moneyPay)) {
-      return
+  pay = () => {
+    const { moneyPay } = this.state;
+    if (!this.checkMoney(moneyPay)) {
+      return;
     }
     const data = {
       amount: env === "sandbox" ? Number(moneyPay) : 10000,
       orderId: Date.now().toString(),
-      storeId: CONFIGS[env].storeId,
+      storeId: CONFIGS[this.state.env].storeId,
       note: "note",
       // method: {
       //   type: 'WALLET'
       // }
-    }
-    refPaymeSDK.current?.pay(
+    };
+    refPaymeSDK?.pay(
       data,
       response => {
-        console.log("response pay", response)
+        console.log("response pay", response);
       },
       error => {
-        console.log("error pay", error)
-        alert(error?.message ?? 'error pay');
+        console.log("error pay", error);
+        alert(error?.message ?? "error pay");
       }
-    )
-  }
+    );
+  };
 
-  return (
-    <>
-      <SafeAreaView style={styles.container}>
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : null} style={{ flex: 1 }}>
-          <ScrollView
-            style={{ flex: 1, marginTop: 20, padding: Platform.OS === "ios" ? 16 : 0 }}
-            bounces={false}
-            keyboardShouldPersistTaps="handled"
-          >
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-                width: "100%",
-              }}
+  render() {
+    return (
+      <>
+        <SafeAreaView style={styles.container}>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : null} style={{ flex: 1 }}>
+            <ScrollView
+              style={{ flex: 1, marginTop: 20, padding: Platform.OS === "ios" ? 16 : 0 }}
+              bounces={false}
+              keyboardShouldPersistTaps="handled"
             >
-              <Text>Enviroment</Text>
-              <View>
-                <PickerModal
-                  items={dataEnv}
-                  onSelected={i => {
-                    if (i.Name) {
-                      setEnv(i.Name)
-                      handleChangeEnv(i.Name)
-                    }
-                  }}
-                  selected={dataEnv[0]}
-                />
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  width: "100%",
+                }}
+              >
+                <Text>Enviroment</Text>
+                <View>
+                  <PickerModal
+                    items={dataEnv}
+                    onSelected={i => {
+                      if (i.Name) {
+                        this.setState({
+                          env: i.Name
+                        })
+                        this.handleChangeEnv(i.Name);
+                      }
+                    }}
+                    selected={dataEnv[0]}
+                  />
+                </View>
+                <TouchableOpacity onPress={() => this.setState({showSetting: !this.stateshowSetting})}>
+                  <AntDesign name="setting" size={24} color="black" />
+                </TouchableOpacity>
               </View>
-              <TouchableOpacity onPress={() => setShowSetting(!showSetting)}>
-                <AntDesign name="setting" size={24} color="black" />
-              </TouchableOpacity>
-            </View>
 
-            {showSetting ? (
-              <>
-                <Text style={{ marginTop: 10 }}>App ID</Text>
+              {this.state.showSetting ? (
+                <>
+                  <Text style={{ marginTop: 10 }}>App ID</Text>
 
-                <TextInput
-                  style={styles.inputToken}
-                  value={appId}
-                  onChangeText={text => setAppId(text)}
-                  placeholder="Nhập App SecretKey Key"
-                />
-
-                <Text style={{ marginTop: 10 }}>App Token</Text>
-
-                <TextInput
-                  style={styles.inputToken}
-                  value={appToken}
-                  onChangeText={text => setAppToken(text)}
-                  placeholder="Nhập App Token"
-                />
-
-                <Text style={{ marginTop: 10 }}>App Public Key</Text>
-
-                <TextInput
-                  style={styles.inputToken}
-                  value={appPublicKey}
-                  onChangeText={text => setAppPublicKey(text)}
-                  placeholder="Nhập Public Key"
-                  multiline
-                />
-                <Text style={{ marginTop: 10 }}>App Private Key</Text>
-
-                <TextInput
-                  style={styles.inputToken}
-                  value={appPrivateKey}
-                  onChangeText={text => setAppPrivateKey(text)}
-                  placeholder="Nhập Private Key"
-                  multiline
-                />
-
-                <Text style={{ marginTop: 10 }}>App SecretKey Key</Text>
-
-                <TextInput
-                  style={styles.inputToken}
-                  value={appSecretkey}
-                  onChangeText={text => setAppSecretkey(text)}
-                  placeholder="Nhập App SecretKey Key"
-                />
-
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    marginTop: 10,
-                  }}
-                >
-                  <TouchableOpacity activeOpacity={0.7} onPress={() => setShowLog(!showLog)}>
-                    <MaterialIcons name={showLog ? "check-box" : "check-box-outline-blank"} size={24} color="black" />
-                  </TouchableOpacity>
-                  <Text style={{ marginLeft: 10 }}>Show Log</Text>
-                </View>
-
-                <View
-                  style={{
-                    width: "100%",
-                    flexDirection: "row",
-                    marginTop: 10,
-                    marginBottom: Platform.OS === "ios" ? 20 : 0,
-                  }}
-                >
-                  <TouchableOpacity style={styles.btnLogin} activeOpacity={0.7} onPress={handleRestoreDefault}>
-                    <Text>RESTORE DEFAULT</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.btnLogin, { marginLeft: 15 }]}
-                    activeOpacity={0.7}
-                    onPress={handleSave}
-                  >
-                    <Text>SAVE</Text>
-                  </TouchableOpacity>
-                </View>
-              </>
-            ) : (
-              <>
-                <View style={{ width: "100%" }}>
-                  <Text style={{ marginBottom: 5 }}>UserID</Text>
                   <TextInput
-                    style={styles.inputPhone}
-                    value={userID}
-                    onChangeText={text => setUserID(text)}
-                    placeholder="required"
-                    keyboardType="numeric"
+                    style={styles.inputToken}
+                    value={this.state.appId}
+                    onChangeText={text => this.setState({appId: text})}
+                    placeholder="Nhập App SecretKey Key"
                   />
-                </View>
 
-                <View style={{ width: "100%", marginTop: 10 }}>
-                  <Text style={{ marginBottom: 5 }}>Phone Number</Text>
+                  <Text style={{ marginTop: 10 }}>App Token</Text>
+
                   <TextInput
-                    style={styles.inputPhone}
-                    value={phone}
-                    onChangeText={text => setPhone(text)}
-                    placeholder="optional"
-                    keyboardType="numeric"
+                    style={styles.inputToken}
+                    value={this.state.appToken}
+                    onChangeText={text => this.setState({appToken: text})}
+                    placeholder="Nhập App Token"
                   />
-                </View>
 
-                <View style={{ width: "100%", marginTop: 10, flexDirection: "row" }}>
-                  <TouchableOpacity style={styles.btnLogin} activeOpacity={0.7} onPress={handleLogin}>
-                    <Text>LOGIN</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.btnLogin, { marginLeft: 15 }]}
-                    activeOpacity={0.7}
-                    onPress={onLogout}
+                  <Text style={{ marginTop: 10 }}>App Public Key</Text>
+
+                  <TextInput
+                    style={styles.inputToken}
+                    value={this.state.appPublicKey}
+                    onChangeText={text => this.setState({appPublicKey: text})}
+                    placeholder="Nhập Public Key"
+                    multiline
+                  />
+                  <Text style={{ marginTop: 10 }}>App Private Key</Text>
+
+                  <TextInput
+                    style={styles.inputToken}
+                    value={this.state.appPrivateKey}
+                    onChangeText={text => this.setState({appPrivateKey: text})}
+                    placeholder="Nhập Private Key"
+                    multiline
+                  />
+
+                  <Text style={{ marginTop: 10 }}>App SecretKey Key</Text>
+
+                  <TextInput
+                    style={styles.inputToken}
+                    value={this.state.appSecretkey}
+                    onChangeText={text => this.setState({appSecretkey: text})}
+                    placeholder="Nhập App SecretKey Key"
+                  />
+
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      marginTop: 10,
+                    }}
                   >
-                    <Text>LOGOUT</Text>
-                  </TouchableOpacity>
-                </View>
+                    <TouchableOpacity activeOpacity={0.7} onPress={() => this.setState({showLog: !this.state.showLog})}>
+                      <MaterialIcons name={this.state.showLog ? "check-box" : "check-box-outline-blank"} size={24} color="black" />
+                    </TouchableOpacity>
+                    <Text style={{ marginLeft: 10 }}>Show Log</Text>
+                  </View>
 
-                {isLogin && (
                   <View
                     style={{
                       width: "100%",
-                      backgroundColor: "#e9e9e9",
-                      padding: 16,
-                      marginTop: 15,
-                      borderRadius: 5,
+                      flexDirection: "row",
+                      marginTop: 10,
+                      marginBottom: Platform.OS === "ios" ? 20 : 0,
                     }}
                   >
+                    <TouchableOpacity style={styles.btnLogin} activeOpacity={0.7} onPress={this.handleRestoreDefault}>
+                      <Text>RESTORE DEFAULT</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.btnLogin, { marginLeft: 15 }]}
+                      activeOpacity={0.7}
+                      onPress={this.handleSave}
+                    >
+                      <Text>SAVE</Text>
+                    </TouchableOpacity>
+                  </View>
+                </>
+              ) : (
+                <>
+                  <View style={{ width: "100%" }}>
+                    <Text style={{ marginBottom: 5 }}>UserID</Text>
+                    <TextInput
+                      style={styles.inputPhone}
+                      value={this.state.userID}
+                      onChangeText={text => this.setState({userID: text})}
+                      placeholder="required"
+                      keyboardType="numeric"
+                    />
+                  </View>
+
+                  <View style={{ width: "100%", marginTop: 10 }}>
+                    <Text style={{ marginBottom: 5 }}>Phone Number</Text>
+                    <TextInput
+                      style={styles.inputPhone}
+                      value={this.state.phone}
+                      onChangeText={text => this.setState({phone: text})}
+                      placeholder="optional"
+                      keyboardType="numeric"
+                    />
+                  </View>
+
+                  <View style={{ width: "100%", marginTop: 10, flexDirection: "row" }}>
+                    <TouchableOpacity style={styles.btnLogin} activeOpacity={0.7} onPress={this.handleLogin}>
+                      <Text>LOGIN</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.btnLogin, { marginLeft: 15 }]}
+                      activeOpacity={0.7}
+                      onPress={this.onLogout}
+                    >
+                      <Text>LOGOUT</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {this.state.isLogin && (
                     <View
                       style={{
-                        flexDirection: "row",
-                        justifyContent: "space-between",
-                        alignItems: "center",
+                        width: "100%",
+                        backgroundColor: "#e9e9e9",
+                        padding: 16,
+                        marginTop: 15,
+                        borderRadius: 5,
                       }}
                     >
-                      <Text>Balance</Text>
-                      <View style={{ flexDirection: "row", alignItems: "center" }}>
-                        <Text style={{ marginRight: 10 }}>{`${balancce} đ`}</Text>
-                        <TouchableOpacity onPress={getWalletInfo}>
-                          <FontAwesome name="refresh" size={24} color="black" />
-                        </TouchableOpacity>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                        }}
+                      >
+                        <Text>Balance</Text>
+                        <View style={{ flexDirection: "row", alignItems: "center" }}>
+                          <Text style={{ marginRight: 10 }}>{`${balancce} đ`}</Text>
+                          <TouchableOpacity onPress={this.getWalletInfo}>
+                            <FontAwesome name="refresh" size={24} color="black" />
+                          </TouchableOpacity>
+                        </View>
                       </View>
-                    </View>
 
-                    <TouchableOpacity style={styles.btnOpenWallet} activeOpacity={0.8} onPress={handlePressOpen}>
-                      <Text>OPEN WALLET</Text>
-                    </TouchableOpacity>
-
-                    <View
-                      style={{
-                        width: "100%",
-                        flexDirection: "row",
-                        marginTop: 15,
-                      }}
-                    >
-                      <TouchableOpacity style={styles.btnDeposit} activeOpacity={0.8} onPress={deposit}>
-                        <Text>DEPOSIT</Text>
+                      <TouchableOpacity style={styles.btnOpenWallet} activeOpacity={0.8} onPress={this.handlePressOpen}>
+                        <Text>OPEN WALLET</Text>
                       </TouchableOpacity>
-                      <TextInput
-                        style={styles.inputMoney}
-                        value={moneyDeposit}
-                        onChangeText={text => setMoneyDeposit(text)}
-                        placeholder="Nhập số tiền"
-                        keyboardType="numeric"
-                        maxLength={9}
-                      />
-                    </View>
 
-                    <View
-                      style={{
-                        width: "100%",
-                        flexDirection: "row",
-                        marginTop: 15,
-                      }}
-                    >
-                      <TouchableOpacity style={styles.btnDeposit} activeOpacity={0.8} onPress={withdraw}>
-                        <Text>WITHDRAW</Text>
-                      </TouchableOpacity>
-                      <TextInput
-                        style={styles.inputMoney}
-                        value={moneyWithdraw}
-                        onChangeText={text => setMoneyWithdraw(text)}
-                        placeholder="Nhập số tiền"
-                        keyboardType="numeric"
-                        maxLength={9}
-                      />
-                    </View>
-
-                    <View
-                      style={{
-                        width: "100%",
-                        flexDirection: "row",
-                        marginTop: 15,
-                      }}
-                    >
-                      <TouchableOpacity style={styles.btnDeposit} activeOpacity={0.8} onPress={transfer}>
-                        <Text>TRANSFER</Text>
-                      </TouchableOpacity>
-                      <TextInput
-                        style={styles.inputMoney}
-                        value={moneyTransfer}
-                        onChangeText={text => setMoneyTransfer(text)}
-                        placeholder="Nhập số tiền"
-                        keyboardType="numeric"
-                        maxLength={9}
-                      />
-                    </View>
-
-                    <View
-                      style={{
-                        width: "100%",
-                        flexDirection: "row",
-                        marginTop: 15,
-                      }}
-                    >
-                      <TouchableOpacity style={styles.btnDeposit} activeOpacity={0.8} onPress={pay}>
-                        <Text>PAY</Text>
-                      </TouchableOpacity>
-                      <TextInput
-                        style={styles.inputMoney}
-                        value={moneyPay}
-                        onChangeText={text => setMoneyPay(text)}
-                        placeholder="Nhập số tiền"
-                        keyboardType="numeric"
-                        maxLength={9}
-                      />
-                    </View>
-
-                    <TouchableOpacity style={styles.btnOpenWallet} activeOpacity={0.8} onPress={getListPaymentMethod}>
-                      <Text>GET LIST PAYMENT METHOD</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.btnOpenWallet} activeOpacity={0.8} onPress={getAccountInfo}>
-                      <Text>GET ACCOUNT INFO</Text>
-                    </TouchableOpacity>
-
-                    {listService.length > 0 && (
                       <View
                         style={{
                           width: "100%",
                           flexDirection: "row",
-                          alignItems: "center",
+                          marginTop: 15,
                         }}
                       >
-                        <TouchableOpacity
-                          style={[styles.btnDeposit, { flex: 1, marginRight: 10, paddingVertical: 11 }]}
-                          activeOpacity={0.8}
-                          onPress={openService}
-                        >
-                          <Text>OPEN SERVICE</Text>
+                        <TouchableOpacity style={styles.btnDeposit} activeOpacity={0.8} onPress={this.deposit}>
+                          <Text>DEPOSIT</Text>
                         </TouchableOpacity>
-
-                        <View style={{ flex: 1 }}>
-                          <PickerModal
-                            items={listService}
-                            onSelected={i => setServiceSelected(i?.Value ?? "MOBILE_CARD")}
-                            selected={listService[0]}
-                          />
-                        </View>
+                        <TextInput
+                          style={styles.inputMoney}
+                          value={this.state.moneyDeposit}
+                          onChangeText={text => this.setState({moneyDeposit: text})}
+                          placeholder="Nhập số tiền"
+                          keyboardType="numeric"
+                          maxLength={9}
+                        />
                       </View>
-                    )}
-                  </View>
-                )}
-              </>
-            )}
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
 
-      {loadingApp && (
-        <View
-          style={{
-            position: "absolute",
-            backgroundColor: "rgba(0,0,0,.8)",
-            width: "100%",
-            height: "100%",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <ActivityIndicator size="large" color="green" />
-        </View>
-      )}
+                      <View
+                        style={{
+                          width: "100%",
+                          flexDirection: "row",
+                          marginTop: 15,
+                        }}
+                      >
+                        <TouchableOpacity style={styles.btnDeposit} activeOpacity={0.8} onPress={this.withdraw}>
+                          <Text>WITHDRAW</Text>
+                        </TouchableOpacity>
+                        <TextInput
+                          style={styles.inputMoney}
+                          value={this.state.moneyWithdraw}
+                          onChangeText={text => this.setState({moneyWithdraw: text})}
+                          placeholder="Nhập số tiền"
+                          keyboardType="numeric"
+                          maxLength={9}
+                        />
+                      </View>
 
-      <PaymeSDK ref={refPaymeSDK} />
-    </>
-  )
+                      <View
+                        style={{
+                          width: "100%",
+                          flexDirection: "row",
+                          marginTop: 15,
+                        }}
+                      >
+                        <TouchableOpacity style={styles.btnDeposit} activeOpacity={0.8} onPress={this.transfer}>
+                          <Text>TRANSFER</Text>
+                        </TouchableOpacity>
+                        <TextInput
+                          style={styles.inputMoney}
+                          value={this.state.moneyTransfer}
+                          onChangeText={text => this.setState({moneyTransfer: text})}
+                          placeholder="Nhập số tiền"
+                          keyboardType="numeric"
+                          maxLength={9}
+                        />
+                      </View>
+
+                      <View
+                        style={{
+                          width: "100%",
+                          flexDirection: "row",
+                          marginTop: 15,
+                        }}
+                      >
+                        <TouchableOpacity style={styles.btnDeposit} activeOpacity={0.8} onPress={this.pay}>
+                          <Text>PAY</Text>
+                        </TouchableOpacity>
+                        <TextInput
+                          style={styles.inputMoney}
+                          value={this.state.moneyPay}
+                          onChangeText={text => this.setState({moneyPay: text})}
+                          placeholder="Nhập số tiền"
+                          keyboardType="numeric"
+                          maxLength={9}
+                        />
+                      </View>
+
+                      <TouchableOpacity style={styles.btnOpenWallet} activeOpacity={0.8} onPress={this.getListPaymentMethod}>
+                        <Text>GET LIST PAYMENT METHOD</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={styles.btnOpenWallet} activeOpacity={0.8} onPress={this.getAccountInfo}>
+                        <Text>GET ACCOUNT INFO</Text>
+                      </TouchableOpacity>
+
+                      {this.state.listService.length > 0 && (
+                        <View
+                          style={{
+                            width: "100%",
+                            flexDirection: "row",
+                            alignItems: "center",
+                          }}
+                        >
+                          <TouchableOpacity
+                            style={[styles.btnDeposit, { flex: 1, marginRight: 10, paddingVertical: 11 }]}
+                            activeOpacity={0.8}
+                            onPress={this.openService}
+                          >
+                            <Text>OPEN SERVICE</Text>
+                          </TouchableOpacity>
+
+                          <View style={{ flex: 1 }}>
+                            <PickerModal
+                              items={this.state.listService}
+                              onSelected={i => this.setState({serviceSelected: i?.Value ?? "MOBILE_CARD"})}
+                              selected={this.state.listService?.[0]}
+                            />
+                          </View>
+                        </View>
+                      )}
+                    </View>
+                  )}
+                </>
+              )}
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </SafeAreaView>
+
+        {this.state.loadingApp && (
+          <View
+            style={{
+              position: "absolute",
+              backgroundColor: "rgba(0,0,0,.8)",
+              width: "100%",
+              height: "100%",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <ActivityIndicator size="large" color="green" />
+          </View>
+        )}
+
+        <PaymeSDK ref={ref => this.refPaymeSDK = ref} />
+      </>
+    );
+  }
 }
 
 const styles = StyleSheet.create({
@@ -799,4 +839,4 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     marginTop: 5,
   },
-})
+});
