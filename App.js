@@ -80,7 +80,7 @@ export default class App extends Component {
       listService: [],
       userID: "",
       phone: "",
-      balancce: 0,
+      balance: 0,
       moneyDeposit: "10000",
       moneyWithdraw: "10000",
       moneyTransfer: "10000",
@@ -98,33 +98,24 @@ export default class App extends Component {
     };
   }
 
-  // useEffect(() => {
-  //   if (listService.length > 0) {
-  //     setServiceSelected(listService[0]?.Value)
-  //   }
-  // }, [listService])
   componentDidMount() {
     this.setState({
       appId: CONFIGS[this.state.env].appId,
       appToken: CONFIGS[this.state.env].appToken,
-      appPublicKey: CONFIGS[this.state.env].appPublicKey,
-      appPrivateKey: CONFIGS[this.state.env].appPrivateKey,
-      appSecretkey: CONFIGS[this.state.env].appSecretkey,
-      loadingApp: false
+      appPublicKey: CONFIGS[this.state.env].publicKey,
+      appPrivateKey: CONFIGS[this.state.env].privateKey,
+      appSecretkey: CONFIGS[this.state.env].secretKey,
+      // loadingApp: false
     });
   }
-  // componentDidUpdate(prevProps, prevState) {
-  //   console.log("prevProps", prevProps);
-  //   console.log("prevState", prevState);
-  // }
 
   handleRestoreDefault = () => {
     this.setState({
       appId: CONFIGS[this.state.env].appId,
       appToken: CONFIGS[this.state.env].appToken,
-      appPublicKey: CONFIGS[this.state.env].appPublicKey,
-      appPrivateKey: CONFIGS[this.state.env].appPrivateKey,
-      appSecretkey: CONFIGS[this.state.env].appSecretkey,
+      appPublicKey: CONFIGS[this.state.env].publicKey,
+      appPrivateKey: CONFIGS[this.state.env].privateKey,
+      appSecretkey: CONFIGS[this.state.env].secretKey,
       showLog: false,
       isLogin: false,
     });
@@ -134,9 +125,9 @@ export default class App extends Component {
     this.setState({
       appId: CONFIGS[env].appId,
       appToken: CONFIGS[env].appToken,
-      appPublicKey: CONFIGS[env].appPublicKey,
-      appPrivateKey: CONFIGS[env].appPrivateKey,
-      appSecretkey: CONFIGS[env].appSecretkey,
+      appPublicKey: CONFIGS[env].publicKey,
+      appPrivateKey: CONFIGS[env].privateKey,
+      appSecretkey: CONFIGS[env].secretKey,
       isLogin: false,
     });
   };
@@ -179,7 +170,7 @@ export default class App extends Component {
   handleLogin = async () => {
     const { userID, phone, appSecretkey, appToken, env, showLog, appPrivateKey, appPublicKey, appId } = this.state;
     this.setState({
-      balancce: 0,
+      balance: 0,
       isLogin: false,
     });
     if (!this.checkUserId()) {
@@ -214,11 +205,13 @@ export default class App extends Component {
         },
       }),
     };
-    refPaymeSDK?.login(
+    // console.log('configs', configs)
+    this.refPaymeSDK?.login(
       configs,
       respone => {
         console.log("respone login", respone);
         alert("Login thành công");
+        // this.handlePressOpen();
         this.getWalletInfo();
         this.getListService();
         this.setState({
@@ -246,7 +239,7 @@ export default class App extends Component {
   };
 
   handlePressOpen = () => {
-    refPaymeSDK?.openWallet(
+    this.refPaymeSDK?.openWallet(
       response => {
         console.log("response openWallet", response);
       },
@@ -259,24 +252,24 @@ export default class App extends Component {
 
   getWalletInfo = () => {
     console.log("getWalletInfo");
-    refPaymeSDK.current?.getWalletInfo(
+    this.refPaymeSDK?.getWalletInfo(
       response => {
         console.log("response getWalletInfo", response);
         this.setState({
-          balancce: response?.balance ?? 0,
+          balance: response?.balance ?? 0,
         });
       },
       error => {
         console.log("error getWalletInfo", error);
         this.setState({
-          balancce: 0,
+          balance: 0,
         });
       }
     );
   };
 
   getAccountInfo = () => {
-    refPaymeSDK.current?.getAccountInfo(
+    this.refPaymeSDK?.getAccountInfo(
       response => {
         console.log("response getAccountInfo", response);
         alert(JSON.stringify(response));
@@ -293,7 +286,7 @@ export default class App extends Component {
     if (!this.checkMoney(moneyDeposit)) {
       return;
     }
-    refPaymeSDK?.deposit(
+    this.refPaymeSDK?.deposit(
       {
         amount: Number(moneyDeposit),
         description: "description",
@@ -312,7 +305,7 @@ export default class App extends Component {
     if (!checkMoney(moneyWithdraw)) {
       return;
     }
-    refPaymeSDK.current?.withdraw(
+    this.refPaymeSDK?.withdraw(
       {
         amount: Number(moneyWithdraw),
         description: "description",
@@ -332,7 +325,7 @@ export default class App extends Component {
     if (!checkMoney(moneyTransfer)) {
       return;
     }
-    refPaymeSDK?.transfer(
+    this.refPaymeSDK?.transfer(
       {
         amount: Number(moneyTransfer),
         description: "Chuyển tiền",
@@ -350,7 +343,7 @@ export default class App extends Component {
 
   getListService = () => {
     console.log("getListService");
-    refPaymeSDK?.getListService(
+    this.refPaymeSDK?.getListService(
       response => {
         console.log("response getListService", response);
         if (Array.isArray(response)) {
@@ -371,7 +364,7 @@ export default class App extends Component {
   };
 
   openService = () => {
-    refPaymeSDK?.openService(
+    this.refPaymeSDK?.openService(
       this.state.serviceSelected ?? "MOBILE_CARD",
       response => {
         console.log("response openService", response);
@@ -388,7 +381,7 @@ export default class App extends Component {
       loadingApp: true,
     });
     const storeId = CONFIGS[this.state.env].storeId;
-    refPaymeSDK?.getListPaymentMethod(
+    this.refPaymeSDK?.getListPaymentMethod(
       storeId,
       response => {
         console.log("response getListPaymentMethod", response);
@@ -408,20 +401,20 @@ export default class App extends Component {
   };
 
   pay = () => {
-    const { moneyPay } = this.state;
+    const { moneyPay, env } = this.state;
     if (!this.checkMoney(moneyPay)) {
       return;
     }
     const data = {
       amount: env === "sandbox" ? Number(moneyPay) : 10000,
       orderId: Date.now().toString(),
-      storeId: CONFIGS[this.state.env].storeId,
+      storeId: CONFIGS[env].storeId,
       note: "note",
       // method: {
       //   type: 'WALLET'
       // }
     };
-    refPaymeSDK?.pay(
+    this.refPaymeSDK?.pay(
       data,
       response => {
         console.log("response pay", response);
@@ -608,7 +601,7 @@ export default class App extends Component {
                       >
                         <Text>Balance</Text>
                         <View style={{ flexDirection: "row", alignItems: "center" }}>
-                          <Text style={{ marginRight: 10 }}>{`${balancce} đ`}</Text>
+                          <Text style={{ marginRight: 10 }}>{`${this.state.balance} đ`}</Text>
                           <TouchableOpacity onPress={this.getWalletInfo}>
                             <FontAwesome name="refresh" size={24} color="black" />
                           </TouchableOpacity>
