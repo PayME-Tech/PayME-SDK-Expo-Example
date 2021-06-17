@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "ExpoPaymeSdkDemo",
-    "slug": "ExpoPaymeSdkDemo",
+    "name": "test-app-ex",
+    "slug": "test-app-ex",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -17,20 +17,13 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "vn.payme.sdk.expo.example",
-      "buildNumber": "10",
-      "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
-      }
+      "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FFFFFF"
-      },
-      "package": "com.expopaymesdk.example",
-      "versionCode": 10
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"

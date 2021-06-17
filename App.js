@@ -108,6 +108,9 @@ export default function App() {
   const [isLogin, setIsLogin] = useState(false)
 
   const [loadingApp, setLoadingApp] = useState(false)
+  // useEffect(() => {
+  //   setLoadingApp(false)
+  // },[])
 
   const handleRestoreDefault = () => {
     setAppId(CONFIGS[env].appId)
@@ -183,10 +186,9 @@ export default function App() {
       clientId: Constants.deviceId,
       env,
       showLog: showLog ? "1" : "0",
-      configColor: ["#5828f2", "#5774fd"],
       publicKey: appPublicKey,
       privateKey: appPrivateKey,
-      xApi: appId,
+      appId: appId,
       phone,
       ...(Platform.OS === "ios" && {
         partner: {
@@ -201,9 +203,8 @@ export default function App() {
         alert("Login thành công")
         setIsLogin(true)
         setLoadingApp(false)
-        setTimeout(() => {
-          getWalletInfo().then(() => getListService())
-        }, 100)
+        getWalletInfo()
+        getListService()
       },
       error => {
         console.log("error login", error)
@@ -233,6 +234,7 @@ export default function App() {
   }
 
   const getWalletInfo = () => {
+    console.log('getWalletInfo')
     return new Promise(resole => {
       refPaymeSDK.current?.getWalletInfo(
         response => {
@@ -257,6 +259,7 @@ export default function App() {
       },
       error => {
         console.log("error getAccountInfo", error)
+        alert(error.message ?? "error getAccountInfo")
       }
     )
   }
@@ -268,7 +271,7 @@ export default function App() {
     refPaymeSDK.current?.deposit(
       {
         amount: Number(moneyDeposit),
-        description: "description",
+        description: "description"
       },
       response => {
         console.log("response deposit", response)
@@ -319,6 +322,7 @@ export default function App() {
   }
 
   const getListService = () => {
+    console.log('getListService')
     refPaymeSDK.current?.getListService(
       response => {
         console.log("response getListService", response)
@@ -362,6 +366,7 @@ export default function App() {
       },
       error => {
         console.log("error getListPaymentMethod", error)
+        alert(error.message ?? "error getAccountInfo")
         setLoadingApp(false)
       }
     )
@@ -657,6 +662,9 @@ export default function App() {
 
                     <TouchableOpacity style={styles.btnOpenWallet} activeOpacity={0.8} onPress={getListPaymentMethod}>
                       <Text>GET LIST PAYMENT METHOD</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.btnOpenWallet} activeOpacity={0.8} onPress={getAccountInfo}>
+                      <Text>GET ACCOUNT INFO</Text>
                     </TouchableOpacity>
 
                     {listService.length > 0 && (
