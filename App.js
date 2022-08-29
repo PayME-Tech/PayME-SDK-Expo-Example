@@ -1,9 +1,11 @@
 /* eslint-disable no-alert */
 /* eslint-disable react-native/no-inline-styles */
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState } from "react";
 import {
+  Alert,
   Keyboard,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   SafeAreaView,
   ScrollView,
@@ -12,36 +14,76 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
-} from "react-native"
-import PaymeSDK from "expo-payme-sdk"
-import { AntDesign, FontAwesome, MaterialIcons } from "@expo/vector-icons"
-import Constants from "expo-constants"
-import { ActivityIndicator } from "react-native"
-import { encryptAES } from "./createConnectToken"
-import PickerModal from "react-native-picker-modal-view"
+} from "react-native";
+import PaymeSDK, { LANGUAGES, encryptAES } from "expo-payme-sdk";
+import { AntDesign, FontAwesome, MaterialIcons } from "@expo/vector-icons";
+import { ActivityIndicator } from "react-native";
+// import { encryptAES } from "./src/index";
+import PickerModal from "react-native-picker-modal-view";
+import * as Application from "expo-application";
+import * as Linking from 'expo-linking';
+import * as Sentry from "sentry-expo";
+const package_json = require('./package.json')
+
+Sentry.init({
+  dsn: "https://3aa8cac8bbf44068b5bdfd6f37db5aca@o405361.ingest.sentry.io/5872104",
+  enableInExpoDevelopment: true,
+  debug: false, // Sentry will try to print out useful debugging information if something goes wrong with sending an event. Set this to `false` in production.
+});
+
+const listPayCode = [
+  'PAYME',
+  'ATM',
+  'CREDIT',
+  'MANUAL_BANK',
+  'VN_PAY',
+  'MOMO',
+  'ZALO_PAY',
+  'VIET_QR'
+]
 
 const CONFIGS = {
+  production: {
+    appToken:
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcHBJZCI6NDQsImlhdCI6MTY1MjIzMjEwM30.IMhz9dBDKJ736hTaxGaMJhJvQiq7Q1axsm6TiydspAU",
+    publicKey: `-----BEGIN PUBLIC KEY-----
+    MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAKRWwS+plGNWsiQiAMUJgBe7wdjhbAbx
+    ZDBqKnAH9hZlRjrdgglBERzy/80/nL8cTI2FWAhEDaR3CewO+nRbaPECAwEAAQ==
+    -----END PUBLIC KEY-----`,
+    privateKey: `-----BEGIN RSA PRIVATE KEY-----
+    MIIBOgIBAAJBAI8rsaSa1cOzIDX/XsniS8TeZ9c1Kg0wqH4pIjUfL3z5X6lXDA3G
+    g3uj/sdOJews6zDoXXxTHPkocPGdja98rb8CAwEAAQJAWRQOiyPrLMAeonopN+Mc
+    0Xivky744wwLSbO+HN8yZMazvdvVCGjuXRXf9C2Et3sP5mcz1MlO2Zmq2xi0Lgc7
+    QQIhANh5Z888Pv7dWr+s9o7SHoyeSAuO6NCUA0r2aaxNd+cDAiEAqU/hdSUeGicG
+    HQl7chq14DImAbEplcGoT0l7Z/7aE5UCIQC7Z18XaXCf88G8bmCFBCKuWdjFKNMk
+    vv6axvh00hwbQQIgcIPFMDQabQbB6UoD3zAg7XxmBXnWSM8JKqeKevHBuoECIG3A
+    deJhhdalcQyJMTFIzx3r3+ANrkrd1v7VMsdFfaQ0
+    -----END RSA PRIVATE KEY-----`,
+    env: "PRODUCTION",
+    secretKey: "0418d21948d904fb6f423998fd1e4714",
+    appId: "44",
+  },
   sandbox: {
     appToken:
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcHBJZCI6MTQsImlhdCI6MTYxNDE2NDI3MH0.MmzNL81YTx8XyTu6SczAqZtnCA_ALsn9GHsJGBKJSIk",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcHBJZCI6OTUsImlhdCI6MTY1MTczMjM0Nn0.TFsg9wizgtWa7EbGzrjC2Gn55TScsJzKGjfeN78bhlg",
     publicKey: `-----BEGIN PUBLIC KEY-----
-      MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAMyTFdiYBiaSIBgqFdxSgzk5LYXKocgT
-      MCx/g1gz9k2jadJ1PDohCs7N65+dh/0dTbT8CIvXrrlAgQT1zitpMPECAwEAAQ==
-      -----END PUBLIC KEY-----`,
+    MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAId28RoBckMTTPqVCC3c1f+fH+BbdVvv
+    wDkSf+0zmaUlCFyQpassU3+8CvM6QbeYSYGWp1YIwGqg2wTF94zT4eECAwEAAQ==
+    -----END PUBLIC KEY-----`,
     privateKey: `-----BEGIN RSA PRIVATE KEY-----
-      MIIBOQIBAAJAZCKupmrF4laDA7mzlQoxSYlQApMzY7EtyAvSZhJs1NeW5dyoc0XL
-      yM+/Uxuh1bAWgcMLh3/0Tl1J7udJGTWdkQIDAQABAkAjzvM9t7kD84PudR3vEjIF
-      5gCiqxkZcWa5vuCCd9xLUEkdxyvcaLWZEqAjCmF0V3tygvg8EVgZvdD0apgngmAB
-      AiEAvTF57hIp2hkf7WJnueuZNY4zhxn7QNi3CQlGwrjOqRECIQCHfqO53A5rvxCA
-      ILzx7yXHzk6wnMcGnkNu4b5GH8usgQIhAKwv4WbZRRnoD/S+wOSnFfN2DlOBQ/jK
-      xBsHRE1oYT3hAiBSfLx8OAXnfogzGLsupqLfgy/QwYFA/DSdWn0V/+FlAQIgEUXd
-      A8pNN3/HewlpwTGfoNE8zCupzYQrYZ3ld8XPGeQ=
-      -----END RSA PRIVATE KEY-----`,
+    MIIBOwIBAAJBAMEKxNcErAKSzmWcps6HVScLctpdDkBiygA3Pif9rk8BoSU0BYAs
+    G5pW8yRmhCwVMRQq+VhJNZq+MejueSBICz8CAwEAAQJBALfa29K1/mWNEMqyQiSd
+    vDotqzvSOQqVjDJcavSHpgZTrQM+YzWwMKAHXLABYCY4K0t01AjXPPMYBueJtFeA
+    i3ECIQDpb6Fp0yGgulR9LHVcrmEQ4ZTADLEASg+0bxVjv9vkWwIhANOzlw9zDMRr
+    i/5bwttz/YBgY/nMj7YIEy/v4htmllntAiA5jLDRoyCOPIGp3nUMpVz+yW5froFQ
+    nfGjPSOb1OgEMwIhAI4FhyvoJQKIm8wyRxDuSXycLbXhU+/sjuKz7V4wfmEpAiBb
+    PmELTX6BquyCs9jUzoPxDWKQSQGvVUwcWXtpnYxSvQ==
+    -----END RSA PRIVATE KEY-----`,
     env: "SANDBOX",
-    secretKey: "de7bbe6566b0f1c38898b7751b057a94",
-    appId: "14",
-    storeId: 24088141,
+    secretKey: "b5d8cf6c30d9cb4a861036bdde44c137",
+    appId: "95",
   },
   dev: {
     appToken:
@@ -62,229 +104,286 @@ const CONFIGS = {
     env: "DEV",
     secretKey: "34cfcd29432cdd5feaecb87519046e2d",
     appId: "12",
-    storeId: 9,
+    storeId: 9
   },
-}
+};
 
 const dataEnv = [
   { Id: "1", Name: "sandbox", Value: "1" },
   { Id: "2", Name: "dev", Value: "2" },
-]
+  { Id: "3", Name: "production", Value: "3" },
+];
 
 export default function App() {
-  const refPaymeSDK = React.useRef(null)
+  const refPaymeSDK = React.useRef(null);
 
-  const [env, setEnv] = useState("sandbox")
+  const [env, setEnv] = useState("sandbox");
 
-  const [listService, setListService] = useState([])
-  const [serviceSelected, setServiceSelected] = useState("MOBILE_CARD")
+  const [listService, setListService] = useState([]);
+  const [serviceSelected, setServiceSelected] = useState("MOBILE_CARD");
+  const [listPaymentMethod, setListPaymentMethod] = useState([]);
+  const [paymentMethodSelected, setPaymentMethodSelected] = useState({ type: "WALLET" });
 
   useEffect(() => {
     if (listService.length > 0) {
-      setServiceSelected(listService[0]?.Value)
+      setServiceSelected(listService[0]?.Value);
     }
-  }, [listService])
+  }, [listService]);
 
-  const [userID, setUserID] = useState("")
+  const [userID, setUserID] = useState("");
 
-  const [phone, setPhone] = useState("")
+  const [phone, setPhone] = useState("");
 
-  const [balancce, setBalance] = useState(0)
+  const [balancce, setBalance] = useState(0);
 
-  const [moneyDeposit, setMoneyDeposit] = useState("10000")
-  const [moneyWithdraw, setMoneyWithdraw] = useState("10000")
-  const [moneyTransfer, setMoneyTransfer] = useState("10000")
-  const [moneyPay, setMoneyPay] = useState("10000")
+  const [moneyDeposit, setMoneyDeposit] = useState("10000");
+  const [moneyWithdraw, setMoneyWithdraw] = useState("10000");
+  const [moneyTransfer, setMoneyTransfer] = useState("10000");
+  const [moneyPay, setMoneyPay] = useState("10000");
+  const [userName, setUserName] = useState("");
 
-  const [appId, setAppId] = useState(CONFIGS[env].appId)
-  const [appToken, setAppToken] = useState(CONFIGS[env].appToken)
-  const [appPublicKey, setAppPublicKey] = useState(CONFIGS[env].publicKey)
-  const [appPrivateKey, setAppPrivateKey] = useState(CONFIGS[env].privateKey)
-  const [appSecretkey, setAppSecretkey] = useState(CONFIGS[env].secretKey)
+  const [payCode, setPayCode] = useState("PAYME");
+  const [payCodeScanQR, setPayCodeScanQR] = useState("PAYME");
 
-  const [showLog, setShowLog] = useState(false)
-  const [showSetting, setShowSetting] = useState(false)
+  const [appId, setAppId] = useState(CONFIGS[env].appId);
+  const [appToken, setAppToken] = useState(CONFIGS[env].appToken);
+  const [appPublicKey, setAppPublicKey] = useState(CONFIGS[env].publicKey);
+  const [appPrivateKey, setAppPrivateKey] = useState(CONFIGS[env].privateKey);
+  const [appSecretkey, setAppSecretkey] = useState(CONFIGS[env].secretKey);
+  const [lang, setLang] = useState(LANGUAGES.VI);
+  const [qrString, setQrString] = useState("");
 
-  const [isLogin, setIsLogin] = useState(false)
+  const [showLog, setShowLog] = useState(false);
+  const [showSetting, setShowSetting] = useState(false);
 
-  const [loadingApp, setLoadingApp] = useState(false)
-  // useEffect(() => {
-  //   setLoadingApp(false)
-  // },[])
+  const [isLogin, setIsLogin] = useState(false);
+
+  const [loadingApp, setLoadingApp] = useState(false);
+
+  const [selectedLanguage, setSelectedLanguage] = useState();
+
+  useEffect(() => {
+    setQrString(`OPENEWALLET|${CONFIGS[env]?.storeId ?? "null"}|PAYMENT|10000|Thanhtoan|${Date.now().toString()}|${"null"}`);
+  }, []);
 
   const handleRestoreDefault = () => {
-    setAppId(CONFIGS[env].appId)
-    setAppToken(CONFIGS[env].appToken)
-    setAppPublicKey(CONFIGS[env].publicKey)
-    setAppPrivateKey(CONFIGS[env].privateKey)
-    setAppSecretkey(CONFIGS[env].secretKey)
-    setShowLog(false)
-    setIsLogin(false)
-  }
+    setAppId(CONFIGS[env].appId);
+    setAppToken(CONFIGS[env].appToken);
+    setAppPublicKey(CONFIGS[env].publicKey);
+    setAppPrivateKey(CONFIGS[env].privateKey);
+    setAppSecretkey(CONFIGS[env].secretKey);
+    setShowLog(false);
+    setIsLogin(false);
+  };
 
   const handleChangeEnv = env => {
-    setAppId(CONFIGS[env].appId)
-    setAppToken(CONFIGS[env].appToken)
-    setAppPublicKey(CONFIGS[env].publicKey)
-    setAppPrivateKey(CONFIGS[env].privateKey)
-    setAppSecretkey(CONFIGS[env].secretKey)
-    setIsLogin(false)
-  }
+    setAppId(CONFIGS[env].appId);
+    setAppToken(CONFIGS[env].appToken);
+    setAppPublicKey(CONFIGS[env].publicKey);
+    setAppPrivateKey(CONFIGS[env].privateKey);
+    setAppSecretkey(CONFIGS[env].secretKey);
+    setIsLogin(false);
+  };
 
   const handleSave = () => {
-    setShowSetting(false)
-    setIsLogin(false)
-  }
+    setShowSetting(false);
+    setIsLogin(false);
+  };
 
   const checkMoney = money => {
-    const m = Number(money)
+    const m = Number(money);
     if (m < 10000) {
-      alert("Vui lòng nhập số tiền lớn hơn 10,000 đ.")
-      return false
+      alert("Vui lòng nhập số tiền lớn hơn 10,000 đ.");
+      return false;
     } else if (m >= 100000000) {
-      alert("Vui lòng nhập số tiền nhỏ hơn 100,000,000 đ.")
-      return false
+      alert("Vui lòng nhập số tiền nhỏ hơn 100,000,000 đ.");
+      return false;
     }
-    return true
-  }
+    return true;
+  };
+
   const checkUserId = () => {
     if (userID === "") {
-      alert("userID is required!")
-      return false
+      alert("userID is required!");
+      return false;
     }
     if (phone === "") {
-      alert("Phone Number is required!")
-      return false
+      alert("Phone Number is required!");
+      return false;
     }
     if (!/^(0|84)\d{9}$/g.test(phone)) {
-      alert("Số điện thoại không hợp lệ!")
-      return false
+      alert("Số điện thoại không hợp lệ!");
+      return false;
     }
-    return true
-  }
+    return true;
+  };
 
   const handleLogin = async () => {
-    setBalance(0)
-    setIsLogin(false)
+    setBalance(0);
+    setIsLogin(false);
     if (!checkUserId()) {
-      return
+      return;
     }
-    setLoadingApp(true)
-    Keyboard.dismiss()
+    setLoadingApp(true);
+    Keyboard.dismiss();
 
     const data = {
       userId: userID,
       phone,
       timestamp: Date.now(),
-    }
+    };
 
-    const connectToken = encryptAES(JSON.stringify(data), appSecretkey)
-
+    const connectToken = encryptAES(JSON.stringify(data), appSecretkey);
+    const clientId = Platform.OS === "ios" ? await Application.getIosIdForVendorAsync() : Application.androidId;
     const configs = {
       connectToken,
       appToken,
-      clientId: Constants.deviceId,
+      clientId,
       env,
+      lang,
       showLog: showLog ? "1" : "0",
       publicKey: appPublicKey,
       privateKey: appPrivateKey,
       appId: appId,
+      configColor: ["#ffa000", "#ff6700"],
       phone,
       ...(Platform.OS === "ios" && {
         partner: {
           paddingTop: 30,
         },
       }),
-    }
+    };
     refPaymeSDK.current?.login(
       configs,
       respone => {
-        console.log("respone login", respone)
-        alert("Login thành công")
-        setIsLogin(true)
-        setLoadingApp(false)
-        getWalletInfo()
-        getListService()
+        console.log("respone login", respone);
+        alert("Login thành công");
+        setIsLogin(true);
+        setLoadingApp(false);
+        getWalletInfo();
+        getListService();
       },
       error => {
-        console.log("error login", error)
-        alert(error?.message ?? "Login thất bại")
-        setIsLogin(false)
-        setLoadingApp(false)
+        console.log("error login", error);
+        alert(error?.message ?? "Login thất bại");
+        setIsLogin(false);
+        setLoadingApp(false);
+      }
+    );
+  };
+
+  const onUnlink = () => {
+    const data = {
+      userId: userID,
+      phone,
+      timestamp: Date.now(),
+    };
+
+    const connectToken = encryptAES(JSON.stringify(data), appSecretkey);
+
+    const configs = {
+      connectToken,
+      appToken,
+      env,
+      publicKey: appPublicKey,
+      privateKey: appPrivateKey,
+      appId: appId,
+    };
+
+    refPaymeSDK.current?.unlinkAccount(
+      configs,
+      response => {
+        setUserID("");
+        setPhone("");
+        setIsLogin(false);
+        console.log("response onUnlink", response);
+      },
+      error => {
+        console.log("error onUnlink", error);
+        alert(error?.message ?? "error onUnlink");
       }
     )
-  }
-
-  const onLogout = () => {
-    setUserID("")
-    setPhone("")
-    setIsLogin(false)
-  }
+  };
 
   const handlePressOpen = () => {
     refPaymeSDK.current?.openWallet(
       response => {
-        console.log("response openWallet", response)
+        console.log("response openWallet", response);
       },
       error => {
-        console.log("error openWallet", error)
-        alert(error?.message ?? "error openWallet")
+        console.log("error openWallet", error);
+        alert(error?.message ?? "error openWallet");
       }
-    )
-  }
+    );
+  };
+
+  const handlePressOpenHistory = () => {
+    refPaymeSDK.current?.openHistory(
+      response => {
+        console.log("response openHistory", response);
+      },
+      error => {
+        console.log("error openHistory", error);
+        alert(error?.message ?? "error openHistory");
+      }
+    );
+  };
 
   const getWalletInfo = () => {
-    console.log('getWalletInfo')
+    console.log("getWalletInfo");
     return new Promise(resole => {
       refPaymeSDK.current?.getWalletInfo(
         response => {
-          console.log("response getWalletInfo", response)
-          setBalance(response?.balance ?? 0)
-          resole(true)
+          console.log("response getWalletInfo", response);
+          setBalance(response?.balance ?? 0);
+          resole(true);
         },
         error => {
-          console.log("error getWalletInfo", error)
-          setBalance(0)
-          resole(true)
+          console.log("error getWalletInfo", error);
+          setBalance(0);
+          resole(true);
         }
-      )
-    })
-  }
+      );
+    });
+  };
 
   const getAccountInfo = () => {
+    setLoadingApp(true);
     refPaymeSDK.current?.getAccountInfo(
       response => {
-        console.log("response getAccountInfo", response)
-        alert(JSON.stringify(response))
+        setLoadingApp(false);
+        console.log("response getAccountInfo", response);
+        Alert.alert("Account Info", JSON.stringify(response));
       },
       error => {
-        console.log("error getAccountInfo", error)
-        alert(error.message ?? "error getAccountInfo")
+        setLoadingApp(false);
+        console.log("error getAccountInfo", error);
+        alert(error.message ?? "error getAccountInfo");
       }
-    )
-  }
+    );
+  };
 
   const deposit = () => {
     if (!checkMoney(moneyDeposit)) {
-      return
+      return;
     }
     refPaymeSDK.current?.deposit(
       {
         amount: Number(moneyDeposit),
-        description: "description"
+        description: "description",
       },
       response => {
-        console.log("response deposit", response)
+        console.log("response deposit", response);
       },
       error => {
-        console.log("error deposit", error)
-        alert(error?.message ?? "error deposit")
+        console.log("error deposit", error);
+        alert(error?.message ?? "error deposit");
       }
-    )
-  }
+    );
+  };
   const withdraw = () => {
     if (!checkMoney(moneyWithdraw)) {
-      return
+      return;
     }
     refPaymeSDK.current?.withdraw(
       {
@@ -292,110 +391,138 @@ export default function App() {
         description: "description",
       },
       response => {
-        console.log("response withdraw", response)
+        console.log("response withdraw", response);
       },
       error => {
-        console.log("error withdraw", error)
-        alert(error?.message ?? "error withdraw")
+        console.log("error withdraw", error);
+        alert(error?.message ?? "error withdraw");
       }
-    )
-  }
+    );
+  };
 
   const transfer = () => {
     if (!checkMoney(moneyTransfer)) {
-      return
+      return;
     }
     refPaymeSDK.current?.transfer(
       {
         amount: Number(moneyTransfer),
         description: "Chuyển tiền",
-        closeWhenDone: true
+        closeWhenDone: true,
       },
       response => {
-        console.log("response transfer", response)
+        console.log("response transfer", response);
       },
       error => {
-        console.log("error transfer", error)
-        alert(error?.message ?? "error transfer")
+        console.log("error transfer", error);
+        alert(error?.message ?? "error transfer");
       }
-    )
-  }
+    );
+  };
 
-  const getListService = () => {
-    console.log('getListService')
+  const getListService = (showAlert = false) => {
+    if (showAlert) {
+      setLoadingApp(true);
+    }
     refPaymeSDK.current?.getListService(
       response => {
-        console.log("response getListService", response)
+        if (showAlert) {
+          setLoadingApp(false);
+          Alert.alert("List Service", JSON.stringify(response));
+        }
         if (Array.isArray(response)) {
           setListService(
             response
               ?.filter(i => i?.enable === true)
               .map((i, index) => ({ Id: `${index}`, Name: `${i?.description}`, Value: `${i?.code}` })) ?? []
-          )
+          );
         }
       },
       error => {
-        console.log("error getListService", error)
-        alert(error?.message ?? "error getListService")
+        if (showAlert) {
+          setLoadingApp(false);
+        }
+        console.log("error getListService", error);
+        alert(error?.message ?? "error getListService");
       }
-    )
-  }
+    );
+  };
 
   const openService = () => {
     refPaymeSDK.current?.openService(
       serviceSelected ?? "MOBILE_CARD",
       response => {
-        console.log("response openService", response)
+        console.log("response openService", response);
       },
       error => {
-        console.log("error openService", error)
-        alert(error?.message ?? "error openService")
+        console.log("error openService", error);
+        alert(error?.message ?? "error openService");
       }
-    )
-  }
+    );
+  };
 
-  const getListPaymentMethod = () => {
-    setLoadingApp(true)
-    const storeId = CONFIGS[env].storeId
-    refPaymeSDK.current?.getListPaymentMethod(
-      storeId,
-      response => {
-        console.log("response getListPaymentMethod", response)
-        alert(JSON.stringify(response))
-        setLoadingApp(false)
-      },
-      error => {
-        console.log("error getListPaymentMethod", error)
-        alert(error.message ?? "error getAccountInfo")
-        setLoadingApp(false)
-      }
-    )
-  }
-
-  const pay = () => {
+  const pay = async () => {
     if (!checkMoney(moneyPay)) {
-      return
+      return;
     }
     const data = {
-      amount: env === "sandbox" ? Number(moneyPay) : 10000,
+      amount: Number(moneyPay),
       orderId: Date.now().toString(),
       storeId: CONFIGS[env].storeId,
+      userName: userName,
+      isShowResultUI: true,
       note: "note",
-      // method: {
-      //   type: 'WALLET'
-      // }
-    }
+      payCode,
+    };
     refPaymeSDK.current?.pay(
       data,
       response => {
-        console.log("response pay", response)
+        console.log("response pay", response);
       },
       error => {
-        console.log("error pay", error)
-        alert(error?.message ?? 'error pay');
+        console.log("error pay", error);
+        // alert(error?.message ?? 'error pay');
+        Alert.alert("Thông báo", error?.message ?? "error pay");
       }
-    )
-  }
+    );
+  };
+
+  const scanQR = async () => {
+    refPaymeSDK.current?.scanQR(
+      {
+        payCode: payCodeScanQR,
+      },
+      response => {
+        console.log("response scanQR", response);
+      },
+      error => {
+        console.log("error scanQR", error);
+        alert(error?.message ?? "error scanQR");
+      }
+    );
+  };
+
+  const payQRCode = async () => {
+    refPaymeSDK.current?.payQRCode(
+      {
+        qr: qrString,
+        isShowResultUI: true,
+        payCode: payCodeScanQR,
+      },
+      response => {
+        console.log("response payQRCode", response);
+      },
+      error => {
+        console.log("error payQRCode", error);
+        Alert.alert("Thông báo", error?.message ?? "error payQRCode");
+      }
+    );
+  };
+
+  const changeLang = lang => {
+    setIsLogin(false);
+    setLang(lang);
+  };
 
   return (
     <>
@@ -420,16 +547,51 @@ export default function App() {
                   items={dataEnv}
                   onSelected={i => {
                     if (i.Name) {
-                      setEnv(i.Name)
-                      handleChangeEnv(i.Name)
+                      setEnv(i.Name);
+                      handleChangeEnv(i.Name);
                     }
                   }}
                   selected={dataEnv[0]}
                 />
+                {/* <Text style={{ borderWidth: 1, padding: 5 }}>sandbox</Text> */}
               </View>
               <TouchableOpacity onPress={() => setShowSetting(!showSetting)}>
                 <AntDesign name="setting" size={24} color="black" />
               </TouchableOpacity>
+            </View>
+
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                width: "100%",
+              }}
+            >
+              <Text>Language</Text>
+              <View style={{ flexDirection: "row", marginLeft: 20 }}>
+                <TouchableOpacity
+                  onPress={() => changeLang(LANGUAGES.VI)}
+                  style={{ flexDirection: "row", alignItems: "center" }}
+                >
+                  <MaterialIcons
+                    name={lang === LANGUAGES.VI ? "check-box" : "check-box-outline-blank"}
+                    size={24}
+                    color="black"
+                  />
+                  <Text>Tiếng Việt</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => changeLang(LANGUAGES.EN)}
+                  style={{ flexDirection: "row", alignItems: "center", marginLeft: 20 }}
+                >
+                  <MaterialIcons
+                    name={lang === LANGUAGES.EN ? "check-box" : "check-box-outline-blank"}
+                    size={24}
+                    color="black"
+                  />
+                  <Text>English</Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
             {showSetting ? (
@@ -522,6 +684,7 @@ export default function App() {
                     value={userID}
                     onChangeText={text => setUserID(text)}
                     placeholder="required"
+                    placeholderTextColor="grey"
                     keyboardType="numeric"
                   />
                 </View>
@@ -532,7 +695,8 @@ export default function App() {
                     style={styles.inputPhone}
                     value={phone}
                     onChangeText={text => setPhone(text)}
-                    placeholder="optional"
+                    placeholder="required"
+                    placeholderTextColor="grey"
                     keyboardType="numeric"
                   />
                 </View>
@@ -544,9 +708,9 @@ export default function App() {
                   <TouchableOpacity
                     style={[styles.btnLogin, { marginLeft: 15 }]}
                     activeOpacity={0.7}
-                    onPress={onLogout}
+                    onPress={onUnlink}
                   >
-                    <Text>LOGOUT</Text>
+                    <Text>UNLINK ACCOUNT</Text>
                   </TouchableOpacity>
                 </View>
 
@@ -580,6 +744,10 @@ export default function App() {
                       <Text>OPEN WALLET</Text>
                     </TouchableOpacity>
 
+                    <TouchableOpacity style={styles.btnOpenWallet} activeOpacity={0.8} onPress={handlePressOpenHistory}>
+                      <Text>OPEN HISTORY</Text>
+                    </TouchableOpacity>
+
                     <View
                       style={{
                         width: "100%",
@@ -591,10 +759,11 @@ export default function App() {
                         <Text>DEPOSIT</Text>
                       </TouchableOpacity>
                       <TextInput
-                        style={styles.inputMoney}
+                        style={[styles.inputMoney, { marginLeft: 10 }]}
                         value={moneyDeposit}
                         onChangeText={text => setMoneyDeposit(text)}
                         placeholder="Nhập số tiền"
+                        placeholderTextColor="grey"
                         keyboardType="numeric"
                         maxLength={9}
                       />
@@ -611,10 +780,11 @@ export default function App() {
                         <Text>WITHDRAW</Text>
                       </TouchableOpacity>
                       <TextInput
-                        style={styles.inputMoney}
+                        style={[styles.inputMoney, { marginLeft: 10 }]}
                         value={moneyWithdraw}
                         onChangeText={text => setMoneyWithdraw(text)}
                         placeholder="Nhập số tiền"
+                        placeholderTextColor="grey"
                         keyboardType="numeric"
                         maxLength={9}
                       />
@@ -631,23 +801,24 @@ export default function App() {
                         <Text>TRANSFER</Text>
                       </TouchableOpacity>
                       <TextInput
-                        style={styles.inputMoney}
+                        style={[styles.inputMoney, { marginLeft: 10 }]}
                         value={moneyTransfer}
                         onChangeText={text => setMoneyTransfer(text)}
                         placeholder="Nhập số tiền"
+                        placeholderTextColor="grey"
                         keyboardType="numeric"
                         maxLength={9}
                       />
                     </View>
 
-                    <View
+                    {/* <View
                       style={{
                         width: "100%",
                         flexDirection: "row",
                         marginTop: 15,
                       }}
                     >
-                      <TouchableOpacity style={styles.btnDeposit} activeOpacity={0.8} onPress={pay}>
+                      <TouchableOpacity style={styles.btnDeposit} activeOpacity={0.8} onPress={() => pay()}>
                         <Text>PAY</Text>
                       </TouchableOpacity>
                       <TextInput
@@ -658,13 +829,119 @@ export default function App() {
                         keyboardType="numeric"
                         maxLength={9}
                       />
+                    </View> */}
+
+                    <View style={{ borderWidth: 1, marginTop: 10, padding: 10, borderColor: "#ccc", borderRadius: 10 }}>
+                      <TouchableOpacity
+                        style={[styles.btnOpenWallet, { marginTop: 0 }]}
+                        activeOpacity={0.8}
+                        onPress={() => pay()}
+                      >
+                        <Text>PAY</Text>
+                      </TouchableOpacity>
+                      <View>
+                        <View
+                          style={{
+                            width: "100%",
+                            flexDirection: "row",
+                            marginTop: 10,
+                          }}
+                        >
+                          <TextInput
+                            style={styles.inputMoney}
+                            value={moneyPay}
+                            onChangeText={text => setMoneyPay(text)}
+                            placeholder="Nhập số tiền"
+                            placeholderTextColor="grey"
+                            keyboardType="numeric"
+                            maxLength={9}
+                          />
+                        </View>
+
+                        <View
+                          style={{
+                            width: "100%",
+                            flexDirection: "row",
+                            marginTop: 10,
+                          }}
+                        >
+                          <TextInput
+                            style={styles.inputMoney}
+                            value={userName}
+                            onChangeText={text => setUserName(text)}
+                            placeholder="Nhập userName"
+                            placeholderTextColor="grey"
+                          />
+                        </View>
+
+                        <View
+                          style={{
+                            width: "100%",
+                            flexDirection: "row",
+                            marginTop: 10,
+                          }}
+                        >
+                          <CPicker
+                            value={payCode}
+                            list={listPayCode}
+                            onChange={(value) => setPayCode(value)}
+                          />
+                        </View>
+                      </View>
                     </View>
 
-                    <TouchableOpacity style={styles.btnOpenWallet} activeOpacity={0.8} onPress={getListPaymentMethod}>
-                      <Text>GET LIST PAYMENT METHOD</Text>
-                    </TouchableOpacity>
+                    <View style={{ borderWidth: 1, marginTop: 10, padding: 10, borderColor: "#ccc", borderRadius: 10 }}>
+                      <TouchableOpacity
+                        style={[styles.btnOpenWallet, { marginTop: 0 }]}
+                        activeOpacity={0.8}
+                        onPress={scanQR}
+                      >
+                        <Text>SCAN QR</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={styles.btnOpenWallet} activeOpacity={0.8} onPress={payQRCode}>
+                        <Text>PAY QRCODE</Text>
+                      </TouchableOpacity>
+                      <View>
+                        <View
+                          style={{
+                            width: "100%",
+                            flexDirection: "row",
+                            marginTop: 10,
+                          }}
+                        >
+                          <CPicker
+                            value={payCodeScanQR}
+                            list={listPayCode}
+                            onChange={(value) => setPayCodeScanQR(value)}
+                          />
+                        </View>
+                        <View
+                          style={{
+                            width: "100%",
+                            flexDirection: "row",
+                            marginTop: 10,
+                          }}
+                        >
+                          <TextInput
+                            style={styles.inputMoney}
+                            value={qrString}
+                            onChangeText={text => setQrString(text)}
+                            placeholder="Nhập QR String"
+                          />
+                        </View>
+                      </View>
+                    </View>
+
                     <TouchableOpacity style={styles.btnOpenWallet} activeOpacity={0.8} onPress={getAccountInfo}>
                       <Text>GET ACCOUNT INFO</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.btnOpenWallet}
+                      activeOpacity={0.8}
+                      onPress={() => getListService(true)}
+                    >
+                      <Text>GET LIST SERVICE</Text>
                     </TouchableOpacity>
 
                     {listService.length > 0 && (
@@ -692,6 +969,9 @@ export default function App() {
                         </View>
                       </View>
                     )}
+
+                    <Text style={{ textAlign: "center", marginTop: 4 }}>{`Version Demo: ${package_json.version}`}</Text>
+                    <Text style={{ textAlign: "center", marginTop: 4 }}>Version SDK: 0.4.7</Text>
                   </View>
                 )}
               </>
@@ -717,10 +997,75 @@ export default function App() {
 
       <PaymeSDK ref={refPaymeSDK} />
     </>
-  )
+  );
 }
 
+const CPicker = ({ style = {}, value = "1", onChange = () => null, list = ["1", "2", "3"] }) => {
+  const [v, setV] = useState(() => value);
+  const [modalVisible, setModaVisible] = useState(false);
+  useEffect(() => {
+    setV(value);
+  }, [value]);
+  const onPress = () => {
+    setModaVisible(true);
+  };
+  const onPressItem = i => {
+    setV(i);
+    setModaVisible(false);
+    onChange?.(i);
+  };
+  return (
+    <>
+      <TouchableOpacity style={[styles.cPicker, style]} onPress={onPress}>
+        <Text>{v}</Text>
+      </TouchableOpacity>
+      <Modal visible={modalVisible} transparent>
+        <TouchableWithoutFeedback style={{ flex: 1 }} onPress={() => setModaVisible(false)}>
+          <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: 'rgba(0,0,0,.8)' }}>
+            <View style={styles.cPickerContainer}>
+              {list.map((i, index) => (
+                <TouchableOpacity
+                  onPress={() => onPressItem(i)}
+                  activeOpacity={0.8}
+                  key={index.toString()}
+                  style={{ marginBottom: 10, width: "100%" }}
+                >
+                  <Text style={{ fontSize: 18 }}>{i}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+    </>
+  );
+};
+
 const styles = StyleSheet.create({
+  cPicker: {
+    borderWidth: 1,
+    flex: 1,
+    padding: 8,
+    justifyContent: "center",
+    borderWidth: 0.5,
+    borderRadius: 5,
+    borderColor: "grey",
+    backgroundColor: "white",
+  },
+  cPickerContainer: {
+    backgroundColor: "white",
+    width: "90%",
+    padding: 10,
+    paddingBottom: 0,
+    elevation: 2,
+    shadowColor: "grey",
+    shadowOffset: {
+      width: 1,
+      height: 1,
+    },
+    shadowOpacity: 0.5,
+    shadowRadius: 3.84,
+  },
   container: {
     flex: 1,
     backgroundColor: "white",
@@ -781,12 +1126,10 @@ const styles = StyleSheet.create({
   },
   inputMoney: {
     flex: 1,
-    padding: 5,
-    paddingHorizontal: 10,
+    padding: 10,
     borderWidth: 0.5,
     borderRadius: 5,
     borderColor: "grey",
-    marginLeft: 10,
     backgroundColor: "white",
   },
   inputToken: {
@@ -799,4 +1142,4 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     marginTop: 5,
   },
-})
+});

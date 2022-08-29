@@ -1,7 +1,8 @@
 {
   "expo": {
-    "name": "test-app-ex",
-    "slug": "test-app-ex",
+    "name": "ExpoPaymeSdkDemo",
+    "slug": "ExpoPaymeSdkDemo",
+    "scheme": "exposdk",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -17,16 +18,38 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "vn.payme.sdk.expo.example",
+      "buildNumber": "43",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FFFFFF"
-      }
+      },
+      "package": "com.expopaymesdk.example",
+      "versionCode": 43
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "sentry-expo"
+    ],
+    "hooks": {
+      "postPublish": [
+        {
+          "file": "sentry-expo/upload-sourcemaps",
+          "config": {
+            "organization": "payme-vn",
+            "project": "open-wallet-sdk-example-expo",
+            "authToken": "a81e33a9f04344fcbbb870fc96415357031447cb72834788b954e4bb1bc08ce4"
+          }
+        }
+      ]
     }
   }
 }
