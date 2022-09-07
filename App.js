@@ -20,18 +20,9 @@ import {
 import PaymeSDK, { LANGUAGES, encryptAES } from "expo-payme-sdk";
 import { AntDesign, FontAwesome, MaterialIcons } from "@expo/vector-icons";
 import { ActivityIndicator } from "react-native";
-// import { encryptAES } from "./src/index";
 import PickerModal from "react-native-picker-modal-view";
 import * as Application from "expo-application";
-import * as Linking from 'expo-linking';
-import * as Sentry from "sentry-expo";
 const package_json = require('./package.json')
-
-Sentry.init({
-  dsn: "https://3aa8cac8bbf44068b5bdfd6f37db5aca@o405361.ingest.sentry.io/5872104",
-  enableInExpoDevelopment: true,
-  debug: false, // Sentry will try to print out useful debugging information if something goes wrong with sending an event. Set this to `false` in production.
-});
 
 const listPayCode = [
   'PAYME',
@@ -121,8 +112,8 @@ export default function App() {
 
   const [listService, setListService] = useState([]);
   const [serviceSelected, setServiceSelected] = useState("MOBILE_CARD");
-  const [listPaymentMethod, setListPaymentMethod] = useState([]);
-  const [paymentMethodSelected, setPaymentMethodSelected] = useState({ type: "WALLET" });
+  // const [listPaymentMethod, setListPaymentMethod] = useState([]);
+  // const [paymentMethodSelected, setPaymentMethodSelected] = useState({ type: "WALLET" });
 
   useEffect(() => {
     if (listService.length > 0) {

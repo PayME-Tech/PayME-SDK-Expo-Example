@@ -35,21 +35,6 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    },
-    "plugins": [
-      "sentry-expo"
-    ],
-    "hooks": {
-      "postPublish": [
-        {
-          "file": "sentry-expo/upload-sourcemaps",
-          "config": {
-            "organization": "payme-vn",
-            "project": "open-wallet-sdk-example-expo",
-            "authToken": "a81e33a9f04344fcbbb870fc96415357031447cb72834788b954e4bb1bc08ce4"
-          }
-        }
-      ]
     }
   }
 }

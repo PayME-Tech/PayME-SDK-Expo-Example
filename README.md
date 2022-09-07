@@ -51,7 +51,7 @@ yarn add expo-payme-sdk
 ## Cài đặt thư viện phụ thuộc
 
 ```shell
-expo add expo-contacts
+expo add expo-contacts @unimodules/react-native-adapter
 ```
 
 ## Usage
